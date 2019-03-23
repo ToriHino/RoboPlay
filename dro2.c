@@ -13,85 +13,33 @@
 #include "fusion-c/header/newTypes.h"
 
 #include "player.h"
+#include "dro2.h"
 
-#define HARDWARETYPE_OPL2       0
-#define HARDWARETYPE_OPL3       1
-#define HARDWARETYPE_DUAL_OPL2  2
-
-#define READ_BUFFER         0xC000
-#define READ_BUFFER_SIZE    0x1000
-
-typedef struct 
-{
-    char signature[8];
-    uint16_t versionMajor;
-    uint16_t versionMinor;
-    
-    uint32_t lengthPairs;
-    uint32_t lengthMS;
-    uint8_t hardwareType;
-    uint8_t format;
-    uint8_t compression;
-    uint8_t shortDelayCode;
-    uint8_t longDelayCode;
-    uint8_t codeMapLength;   
-} SOP2_HEADER;
-
-SOP2_HEADER sop2Header;
-uint8_t codeMap[256];
-
-uint8_t segmentList[256];
-uint8_t currentSegment;
-
-uint16_t delayCounter;
-uint32_t indexPtr;
-
-uint8_t* songdata;
-
-char* FT_getPlayerInfo()
-{
-    return "DOSBox Raw OPL type 2.0 Player by RoboSoft Inc.";
-}
-
-char* FT_getTitle()
-{
-    return "-";
-}
-
-char* FT_getAuthor()
-{
-    return "-";
-}
-
-char* FT_getDescription()
-{
-    return "-";
-}
+ROBO_PLAYER_HEADER* header_ptr;
 
 boolean FT_load(char* fileName)
-{
-    ROBO_PLAYER_HEADER* header_ptr = (void *)ROBO_PLAYER_BASE;
-    
+{  
     uint8_t  i;
     uint16_t bytesRead;
     uint8_t* destination;
 
+    header_ptr = (void *)ROBO_PLAYER_BASE;
     header_ptr->FT_Open_ptr(fileName);
 
-    header_ptr->FT_Read_ptr(&sop2Header, sizeof(SOP2_HEADER));
-    if (strncmp(sop2Header.signature, "DBRAWOPL", sizeof(sop2Header.signature)))
+    header_ptr->FT_Read_ptr(&dro2Header, sizeof(DRO2_HEADER));
+    if (strncmp(dro2Header.signature, "DBRAWOPL", sizeof(dro2Header.signature)))
     {
         header_ptr->FT_Close_ptr();        
         return false;
     }
-    if(sop2Header.versionMajor != 2)
+    if(dro2Header.versionMajor != 2)
     {
         header_ptr->FT_Close_ptr();        
         return false;
     }
-    header_ptr->FT_Read_ptr(codeMap, sop2Header.codeMapLength);
+    header_ptr->FT_Read_ptr(codeMap, dro2Header.codeMapLength);
 
-    if(sop2Header.hardwareType == HARDWARETYPE_OPL3 || sop2Header.hardwareType == HARDWARETYPE_DUAL_OPL2)
+    if(dro2Header.hardwareType == HARDWARETYPE_OPL3 || dro2Header.hardwareType == HARDWARETYPE_DUAL_OPL2)
     {
         header_ptr->FT_WriteOpl2_ptr(0x5, 0x3);
     }
@@ -121,8 +69,6 @@ boolean FT_load(char* fileName)
 
 boolean FT_update()
 {
-    ROBO_PLAYER_HEADER* header_ptr = (void *)ROBO_PLAYER_BASE;
-
     uint8_t registerIndex;
     uint8_t value;
     uint8_t actualRegister;
@@ -135,7 +81,7 @@ boolean FT_update()
     while(!delayCounter)
     {
         indexPtr++;
-        if(indexPtr > sop2Header.lengthPairs)
+        if(indexPtr > dro2Header.lengthPairs)
         {
             return false;
         }
@@ -153,11 +99,11 @@ boolean FT_update()
             header_ptr->FT_SetSegment_ptr(segmentList[++currentSegment]);
         }
 
-        if(registerIndex == sop2Header.shortDelayCode)
+        if(registerIndex == dro2Header.shortDelayCode)
         {
             delayCounter = value + 1;
         }
-        else if(registerIndex == sop2Header.longDelayCode)
+        else if(registerIndex == dro2Header.longDelayCode)
         {
             delayCounter = (value + 1) << 8;
         }
@@ -183,8 +129,6 @@ boolean FT_update()
 
 void FT_rewind(byte subsong)
 {
-    ROBO_PLAYER_HEADER* header_ptr = (void *)ROBO_PLAYER_BASE;
-
     // No subsongs in this format
     subsong;
 
@@ -200,4 +144,24 @@ float FT_getRefresh()
 {
     // Fixed replay rate of 1000Hz
     return 1000.0;
+}
+
+char* FT_getPlayerInfo()
+{
+    return "DOSBox Raw OPL type 2.0 Player by RoboSoft Inc.";
+}
+
+char* FT_getTitle()
+{
+    return "-";
+}
+
+char* FT_getAuthor()
+{
+    return "-";
+}
+
+char* FT_getDescription()
+{
+    return "-";
 }

@@ -39,7 +39,7 @@ LDFLAGS = --code-loc $(ADDR_CODE) --data-loc $(ADDR_DATA) -L $(LIBDIR) $(INC1) $
 
 REL = 
 
-all: $(TARGETNAME).com dro2.ply clean
+all: $(TARGETNAME).com dro2.ply sop.ply clean
 
 $(TARGETNAME).com: $(REL)
 	sdcc $(CFLAGS) $(TARGETNAME).c $(REL) $(LDFLAGS)

@@ -38,6 +38,8 @@ typedef struct
     byte (*FT_AllocateSegment_ptr)();
     void (*FT_SetSegment_ptr)(uint8_t segment);
 
+    void (*FT_SetRefresh_ptr)(float refresh);
+
     void (*FT_WriteOpl1_ptr)(uint8_t addr, uint8_t value);
     void (*FT_WriteOpl2_ptr)(uint8_t addr, uint8_t value);
 } ROBO_PLAYER_HEADER;

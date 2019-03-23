@@ -134,45 +134,30 @@ void FT_WriteOpl2(uint8_t addr, uint8_t value)
 }
 
 //
-// Set timer T1 count
+// Set refresh rate
 //
-void FT_SetTimer1Count(uint8_t value)
+void FT_SetRefresh(float refresh)
 {
-    FT_WriteOpl1(OPL4_TIMER1_COUNT, value);
-}
-
-//
-// Set timer T2 count
-//
-void FT_SetTimer2Count(uint8_t value)
-{
-    FT_WriteOpl1(OPL4_TIMER2_COUNT, value);
-}
-
-//
-// Set timer T1 state
-//
-void FT_SetTimer1State(boolean state)
-{
-    FT_WriteOpl1(4, (state) ? 0x01 : 0x00);
-}
-
-//
-// Set timer T2 state
-//
-void FT_SetTimer2State(boolean state)
-{
-    FT_WriteOpl1(4, (state) ? 0x02 : 0x00);
+    if( refresh > 50.0)
+    {
+        FT_WriteOpl1(OPL4_TIMER1_COUNT, 255 - (uint8_t)( (1000.0 / refresh) / 0.08));
+        FT_WriteOpl1(4, 0x01);
+    }
+    else
+    {       
+        FT_WriteOpl1(OPL4_TIMER2_COUNT, 255 - (uint8_t)( (1000.0 / refresh) / 0.320) );
+        FT_WriteOpl1(4, 0x02);
+    }
 }
 
 //
 // Reset OPL
 //
-void FT_OPL_Reset()
+void FT_ResetOPL()
 {
     uint8_t i = 0;
 
-    FT_WriteOpl2(5, 3);             /* YMF-262M Mode */
+    FT_WriteOpl2(5, 3);
     FT_WriteOpl1(1, 0);
     FT_WriteOpl1(2, 0);
     FT_WriteOpl1(3, 0);
@@ -180,6 +165,7 @@ void FT_OPL_Reset()
     FT_WriteOpl1(8, 0);
 
     FT_WriteOpl2(4, 0);
+    FT_WriteOpl1(4, 0x80);
 
     for(i = 20; i < 0xf6; i++)
     {
@@ -215,7 +201,7 @@ void FT_Close()
 //
 // Load player module
 //
-void FT_loadPlayer(char* fileName)
+void FT_LoadPlayer(char* fileName)
 {
     uint16_t fH = 0;
     uint8_t i = 0;
@@ -242,13 +228,14 @@ void FT_loadPlayer(char* fileName)
 
     printf("%s\n\n\r", header_ptr->FT_getPlayerInfo_ptr());
 
-
     header_ptr->FT_Open_ptr =  &FT_Open;
     header_ptr->FT_Read_ptr =  &FT_Read;
     header_ptr->FT_Close_ptr = &FT_Close;
     
     header_ptr->FT_AllocateSegment_ptr = &FT_AllocateSegment;
     header_ptr->FT_SetSegment_ptr = &FT_SetSegment;
+
+    header_ptr->FT_SetRefresh_ptr = &FT_SetRefresh;
 
     header_ptr->FT_WriteOpl1_ptr = &FT_WriteOpl1;
     header_ptr->FT_WriteOpl2_ptr = &FT_WriteOpl2;
@@ -269,39 +256,37 @@ boolean FT_EscPressed()
 //
 void main(char *argv[], uint16_t argc) 
 {
-    float timer;
+    float refresh;
     argc;
 
-    printf("RoboPlay v0.2 - Multi format player for OPL3/4\n\r");
+    printf("RoboPlay v0.3 - Multi format player for OPL3/4\n\r");
     printf("Copyright (C) 2019 RoboSoft Inc.\n\r");
 
     InitRamMapperInfo(4);
     FT_AllocateSegments();
 
-    FT_loadPlayer(argv[0]);
+    FT_LoadPlayer(argv[0]);
     if(!header_ptr->FT_load_ptr(argv[1]))
     {
         printf(" ...Error\n\r");
-        printf("Not a valid file\n\r");
+        printf("Not a valid file for this player\n\r");
         Exit(__INTER);
     }
 
     printf(" ...Done\n\r");
 
-    printf("Title     : %s\n\r", header_ptr->FT_getTitle_ptr());
-    printf("Author    : %s\n\r", header_ptr->FT_getAuthor_ptr());
-    printf("Descrition: %s\n\r", header_ptr->FT_getDescription_ptr());
+    printf("Title      : %s\n\r", header_ptr->FT_getTitle_ptr());
+    printf("Author     : %s\n\r", header_ptr->FT_getAuthor_ptr());
+    printf("Description: %s\n\r", header_ptr->FT_getDescription_ptr());
 
     printf("\nNow playing ...ESC to stop\n\r");
 
     DisableInterupt();
 
-    FT_OPL_Reset();
-    header_ptr->FT_rewind_ptr(0);
+    FT_ResetOPL();
 
-    timer = header_ptr->FT_getRefresh_ptr() / 80;
-    FT_SetTimer1Count(255 - (uint8_t)timer);
-    FT_SetTimer1State(true);
+    header_ptr->FT_rewind_ptr(0);
+    FT_SetRefresh(header_ptr->FT_getRefresh_ptr());
 
     while(!FT_EscPressed())
     {
@@ -310,11 +295,11 @@ void main(char *argv[], uint16_t argc)
             header_ptr->FT_rewind_ptr(0);
         }
 
-        while(!InPort(OPL4_REG) & 0x01);
+        while(!InPort(OPL4_REG) & 0x3);
         FT_WriteOpl1(4, 0x80);
-    }
+    }   
 
-    FT_OPL_Reset();
+    FT_ResetOPL();
  
     FT_SetSegment(0);
     EnableInterupt();

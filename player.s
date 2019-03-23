@@ -1,5 +1,5 @@
 ;
-; RoboPLUG
+; RoboPlay
 ;
 ; Copyright (C) 2019 by RoboSoft.
 ;
@@ -42,5 +42,3 @@
     .org    0x4030  ;RoboPlay player code start adress
 
     .area   _CODE
-
-;    .area   _DATA
