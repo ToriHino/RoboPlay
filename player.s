@@ -9,6 +9,7 @@
     .globl  _FT_update
     .globl  _FT_rewind
     .globl  _FT_getRefresh
+    .globl  _FT_getSubSongs
     .globl  _FT_getPlayerInfo
     .globl  _FT_getTitle
     .globl  _FT_getAuthor
@@ -34,6 +35,7 @@
     .dw _FT_update
     .dw _FT_rewind
     .dw _FT_getRefresh
+    .dw _FT_getSubSongs
     .dw _FT_getPlayerInfo
     .dw _FT_getTitle
     .dw _FT_getAuthor

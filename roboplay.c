@@ -279,6 +279,11 @@ void main(char *argv[], uint16_t argc)
     printf("Author     : %s\n\r", header_ptr->FT_getAuthor_ptr());
     printf("Description: %s\n\r", header_ptr->FT_getDescription_ptr());
 
+    if(header_ptr->FT_getSubSongs_ptr() > 1)
+    {
+        printf("Number of subsongs: %d\n\r", header_ptr->FT_getSubSongs_ptr());
+    }
+
     printf("\nNow playing ...ESC to stop\n\r");
 
     DisableInterupt();

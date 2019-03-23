@@ -127,7 +127,7 @@ boolean FT_update()
     return true;
 }
 
-void FT_rewind(byte subsong)
+void FT_rewind(int8_t subsong)
 {
     // No subsongs in this format
     subsong;
@@ -144,6 +144,11 @@ float FT_getRefresh()
 {
     // Fixed replay rate of 1000Hz
     return 1000.0;
+}
+
+uint8_t FT_getSubSongs()
+{
+    return 0;
 }
 
 char* FT_getPlayerInfo()

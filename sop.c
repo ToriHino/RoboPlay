@@ -94,7 +94,7 @@ boolean FT_update()
     return !songEnd;
 }
 
-void FT_rewind(uint8_t subsong)
+void FT_rewind(int8_t subsong)
 {
     uint8_t i = 0;
 
@@ -161,6 +161,11 @@ void FT_rewind(uint8_t subsong)
 float FT_getRefresh()
 {
     return interval;
+}
+
+uint8_t FT_getSubSongs()
+{
+    return 0;
 }
 
 char* FT_getPlayerInfo()

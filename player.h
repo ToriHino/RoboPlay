@@ -22,8 +22,10 @@ typedef struct
     // To be implemented by player
     boolean (*FT_load_ptr)(char* fileName);
     boolean (*FT_update_ptr)();
-    void (*FT_rewind_ptr)(byte subsong);
+    void (*FT_rewind_ptr)(int8_t subsong);
     float (*FT_getRefresh_ptr)();
+
+    uint8_t (*FT_getSubSongs_ptr)();
 
     char* (*FT_getPlayerInfo_ptr)();
     char* (*FT_getTitle_ptr)();
@@ -46,7 +48,8 @@ typedef struct
 
 extern boolean FT_load(char* fileName);
 extern boolean FT_update();
-extern void FT_rewind(byte subsong);
+extern void FT_rewind(int8_t subsong);
 extern float FT_getRefresh();
+extern uint8_t FT_getSubSongs();
 
 #endif
