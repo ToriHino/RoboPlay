@@ -58,6 +58,8 @@ boolean FT_load(char* fileName)
 
 boolean FT_update()
 {
+    uint16_t tmp;
+
     boolean setspeed = false;
 
     if(delayCounter)
@@ -92,7 +94,8 @@ boolean FT_update()
                         pos = 0;
                         header_ptr->FT_SetSegment_ptr(++currentSegment);
                     }
-                    speed = songdata[pos].param + songdata[pos].command << 8;
+                    tmp = songdata[pos].command << 8;
+                    speed = songdata[pos].param + tmp;
                     header_ptr->FT_UpdateRefresh_ptr();
                 }
                 else
@@ -137,9 +140,8 @@ void FT_rewind(int8_t subsong)
 }
 
 float FT_getRefresh()
-{
-    float refresh =  1193180.0 / (float)(speed ? speed : 0xffff);
-    return refresh;
+{ 
+    return 1193180.0 / (float)(speed ? speed : 0xffff);
 }
 
 uint8_t FT_getSubSongs()
