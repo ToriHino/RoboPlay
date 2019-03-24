@@ -136,8 +136,9 @@ void FT_WriteOpl2(uint8_t addr, uint8_t value)
 //
 // Set refresh rate
 //
-void FT_SetRefresh(float refresh)
+void FT_SetRefresh()
 {
+    float refresh = header_ptr->FT_getRefresh_ptr();
     if( refresh > 50.0)
     {
         FT_WriteOpl1(OPL4_TIMER1_COUNT, 255 - (uint8_t)( (1000.0 / refresh) / 0.08));
@@ -235,7 +236,7 @@ void FT_LoadPlayer(char* fileName)
     header_ptr->FT_AllocateSegment_ptr = &FT_AllocateSegment;
     header_ptr->FT_SetSegment_ptr = &FT_SetSegment;
 
-    header_ptr->FT_SetRefresh_ptr = &FT_SetRefresh;
+    header_ptr->FT_UpdateRefresh_ptr = &FT_SetRefresh;
 
     header_ptr->FT_WriteOpl1_ptr = &FT_WriteOpl1;
     header_ptr->FT_WriteOpl2_ptr = &FT_WriteOpl2;
@@ -256,7 +257,6 @@ boolean FT_EscPressed()
 //
 void main(char *argv[], uint16_t argc) 
 {
-    float refresh;
     argc;
 
     printf("RoboPlay v0.3 - Multi format player for OPL3/4\n\r");
@@ -291,7 +291,7 @@ void main(char *argv[], uint16_t argc)
     FT_ResetOPL();
 
     header_ptr->FT_rewind_ptr(0);
-    FT_SetRefresh(header_ptr->FT_getRefresh_ptr());
+    FT_SetRefresh();
 
     while(!FT_EscPressed())
     {

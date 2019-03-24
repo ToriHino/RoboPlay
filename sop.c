@@ -265,7 +265,7 @@ void FT_SetTempo(uint8_t tempo)
 {
     interval = (tempo * sopHeader.tickBeat) / 60;
 
-    header_ptr->FT_SetRefresh_ptr(interval);
+    header_ptr->FT_UpdateRefresh_ptr();
 }
 
 boolean FT_LoadSOPInstruments()
