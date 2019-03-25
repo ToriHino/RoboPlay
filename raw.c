@@ -51,6 +51,17 @@ boolean FT_load(char* fileName)
         }
     } while (bytesRead);
 
+    for(i = 0; i < 2; i++)
+    {
+        if(destination >= (uint8_t*)PAGE_SIZE)
+        {
+            segmentList[currentSegment] = header_ptr->FT_AllocateSegment_ptr();
+            header_ptr->FT_SetSegment_ptr(segmentList[currentSegment++]);
+            destination = (uint8_t*)TRACK_DATA;
+        }
+        *destination++ = 0xff;
+    }
+
     header_ptr->FT_Close_ptr();
 
     return true;
