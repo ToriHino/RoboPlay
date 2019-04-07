@@ -310,16 +310,50 @@ boolean FT_LeftPressed()
 //
 void main(char *argv[], uint16_t argc) 
 {
-    argc;
+    uint8_t songArgument;
+    REGS* regs;
+    char* buffer;
+    char  playerName[13];
+    char* environment = "ROBOPLAY";
 
-    printf("RoboPlay v0.3 - Multi format player for OPL3/4\n\r");
+    printf("RoboPlay v0.4 - Multi format player for OPL3/4\n\r");
     printf("Copyright (C) 2019 RoboSoft Inc.\n\r");
 
     InitRamMapperInfo(4);
     FT_AllocateSegments();
 
-    FT_LoadPlayer(argv[0]);
-    if(!iRoboPlay->RP_Load(argv[1]))
+    if(argc == 0)
+    {
+        printf("\n\rUsage: RoboPlay [<player>.PLY] <song>.EXT\n\r");
+        printf("Player name is optional. When no player is provided,\n\rthe songs file extension is used for identification\n\r");
+        printf("\n\rUse environment item \"ROBOPLAY\" for players path\n\r");
+        printf("E.g. ROBOPLAY = A:\\ROBOPLAY\\");
+        Exit(0);
+    }
+    
+    buffer = MMalloc(256 + 13);
+
+    regs = _REGs();
+    regs->hl = (unsigned int)environment;
+    regs->de = (unsigned int)buffer;
+    regs->bc = (unsigned int)0xff6b;
+    IntDos();
+
+    if(argc == 1)
+    {
+        sprintf(playerName, "%s.PLY", &argv[0][StrChr(argv[0],'.') + 1]);
+        StrConcat(buffer, playerName);
+
+        songArgument = 0;
+    }
+    else
+    {
+        StrConcat(buffer, argv[0]);
+        songArgument = 1;
+    }
+    FT_LoadPlayer(buffer);
+
+    if(!iRoboPlay->RP_Load(argv[songArgument]))
     {
         printf(" ...Error\n\r");
         printf("Not a valid file for this player\n\r");
