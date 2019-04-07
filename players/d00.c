@@ -9,13 +9,13 @@
 
 #include <string.h>
 #include <stdint.h>
-#include "fusion-c/header/msx_fusion.h"
-#include "fusion-c/header/newTypes.h"
+#include "../fusion-c/header/msx_fusion.h"
+#include "../fusion-c/header/newTypes.h"
 
-#include "player.h"
+#include "../player.h"
 #include "d00.h"
 
-ROBO_PLAYER_HEADER* header_ptr;
+ROBO_PLAYER_INTERFACE* iRoboPlay;
 
 #define HIBYTE(val) (val >> 8)
 #define LOBYTE(val) (val & 0xff)
@@ -32,20 +32,20 @@ static inline uint16_t LE_WORD(const uint16_t *val)
   return (b[1] << 8) + b[0];
 }
 
-boolean FT_load(char* fileName)
+boolean RP_Load(char* fileName)
 {  
     int8_t i;
     uint8_t* str;
     uint16_t bytesRead;
     boolean ver1 = false;
 
-    header_ptr = (void *)ROBO_PLAYER_BASE;
+    iRoboPlay = (void *)ROBO_PLAYER_BASE;
 
-    header_ptr->FT_Open_ptr(fileName);
+    iRoboPlay->RP_Open(fileName);
 
     filedata = (uint8_t*)D00_FILE_DATA;
-    bytesRead = header_ptr->FT_Read_ptr(filedata, D00_MAX_FILE_SIZE);
-    header_ptr->FT_Close_ptr();
+    bytesRead = iRoboPlay->RP_Read(filedata, D00_MAX_FILE_SIZE);
+    iRoboPlay->RP_Close();
 
     filedata[bytesRead] = 0x00;
     header = (D00_HEADER*)filedata;
@@ -116,7 +116,7 @@ boolean FT_load(char* fileName)
     return true;
 }
 
-boolean FT_update()
+boolean RP_Update()
 {
     uint8_t  c, cnt, trackend=0, fx, note;
     uint16_t ord, *patt, buf, fxop, pattpos;
@@ -181,7 +181,7 @@ boolean FT_update()
             if(version == 4)  // v4: hard restart SR
                 if(channel[c].del == inst[channel[c].inst].timer)
                     if(channel[c].nextnote)
-                        header_ptr->FT_WriteOpl1_ptr(0x83 + op_table[c], inst[channel[c].inst].sr);
+                        iRoboPlay->RP_WriteOpl1(0x83 + op_table[c], inst[channel[c].inst].sr);
             if(version < 3)
                 channel[c].del--;
             else if(channel[c].speed)
@@ -418,7 +418,7 @@ boolean FT_update()
     return !songend;
 }
 
-void FT_rewind(int8_t subsong)
+void RP_Rewind(int8_t subsong)
 {
     uint8_t i;
     TPOIN* tpoin;
@@ -461,7 +461,7 @@ void FT_rewind(int8_t subsong)
     cursubsong = subsong;
 }
 
-float FT_getRefresh()
+float RP_GetRefresh()
 {
     if(version > 1)
         return header->speed;
@@ -469,7 +469,7 @@ float FT_getRefresh()
         return header1->speed;
 }
 
-uint8_t FT_getSubSongs()
+uint8_t RP_GetSubSongs()
 {
     if(version > 1)
         return header->subsongs;
@@ -477,12 +477,12 @@ uint8_t FT_getSubSongs()
         return header1->subsongs;
 }
 
-char* FT_getPlayerInfo()
+char* RP_GetPlayerInfo()
 {
     return "EdLib packed module player by RoboSoft Inc.";
 }
 
-char* FT_getTitle()
+char* RP_GetTitle()
 {
     if(version > 1)
         return header->songname;
@@ -490,7 +490,7 @@ char* FT_getTitle()
         return "-";
 }
 
-char* FT_getAuthor()
+char* RP_GetAuthor()
 {
     if(version > 1)
         return header->author;
@@ -498,7 +498,7 @@ char* FT_getAuthor()
         return "-";
 }
 
-char* FT_getDescription()
+char* RP_GetDescription()
 {
     if(*datainfo)
         return datainfo;
@@ -511,16 +511,16 @@ void FT_SetVolume(uint8_t chan)
   uint8_t  op = op_table[chan];
   uint16_t insnr = channel[chan].inst;
 
-  header_ptr->FT_WriteOpl1_ptr(
+  iRoboPlay->RP_WriteOpl1(
         0x43 + op,
         (uint8_t)(63-((63-(inst[insnr].data[2] & 63))/63.0)*(63-channel[chan].vol)) + (inst[insnr].data[2] & 192));
 
   if(inst[insnr].data[10] & 1)
-    header_ptr->FT_WriteOpl1_ptr(
+    iRoboPlay->RP_WriteOpl1(
         0x40 + op,
         (uint8_t)(63-((63-channel[chan].modvol)/63.0)*(63-channel[chan].vol)) + (inst[insnr].data[7] & 192));
   else
-    header_ptr->FT_WriteOpl1_ptr(
+    iRoboPlay->RP_WriteOpl1(
         0x40 + op,
         channel[chan].modvol + (inst[insnr].data[7] & 192));
 }
@@ -533,11 +533,11 @@ void FT_SetFreq(uint8_t chan)
     freq += inst[channel[chan].inst].tunelev;
 
   freq += channel[chan].slideval;
-  header_ptr->FT_WriteOpl1_ptr(0xa0 + chan, freq & 255);
+  iRoboPlay->RP_WriteOpl1(0xa0 + chan, freq & 255);
   if(channel[chan].key)
-    header_ptr->FT_WriteOpl1_ptr(0xb0 + chan, ((freq >> 8) & 31) | 32);
+    iRoboPlay->RP_WriteOpl1(0xb0 + chan, ((freq >> 8) & 31) | 32);
   else
-    header_ptr->FT_WriteOpl1_ptr(0xb0 + chan, (freq >> 8) & 31);
+    iRoboPlay->RP_WriteOpl1(0xb0 + chan, (freq >> 8) & 31);
 }
 
 void FT_SetInst(uint8_t chan)
@@ -546,24 +546,24 @@ void FT_SetInst(uint8_t chan)
   uint16_t insnr = channel[chan].inst;
 
   // set instrument data
-  header_ptr->FT_WriteOpl1_ptr(0x63 + op, inst[insnr].data[0]);
-  header_ptr->FT_WriteOpl1_ptr(0x83 + op, inst[insnr].data[1]);
-  header_ptr->FT_WriteOpl1_ptr(0x23 + op, inst[insnr].data[3]);
-  header_ptr->FT_WriteOpl1_ptr(0xe3 + op, inst[insnr].data[4]);
-  header_ptr->FT_WriteOpl1_ptr(0x60 + op, inst[insnr].data[5]);
-  header_ptr->FT_WriteOpl1_ptr(0x80 + op, inst[insnr].data[6]);
-  header_ptr->FT_WriteOpl1_ptr(0x20 + op, inst[insnr].data[8]);
-  header_ptr->FT_WriteOpl1_ptr(0xe0 + op, inst[insnr].data[9]);
+  iRoboPlay->RP_WriteOpl1(0x63 + op, inst[insnr].data[0]);
+  iRoboPlay->RP_WriteOpl1(0x83 + op, inst[insnr].data[1]);
+  iRoboPlay->RP_WriteOpl1(0x23 + op, inst[insnr].data[3]);
+  iRoboPlay->RP_WriteOpl1(0xe3 + op, inst[insnr].data[4]);
+  iRoboPlay->RP_WriteOpl1(0x60 + op, inst[insnr].data[5]);
+  iRoboPlay->RP_WriteOpl1(0x80 + op, inst[insnr].data[6]);
+  iRoboPlay->RP_WriteOpl1(0x20 + op, inst[insnr].data[8]);
+  iRoboPlay->RP_WriteOpl1(0xe0 + op, inst[insnr].data[9]);
   if(version)
-    header_ptr->FT_WriteOpl1_ptr(0xc0 + chan, inst[insnr].data[10]);
+    iRoboPlay->RP_WriteOpl1(0xc0 + chan, inst[insnr].data[10]);
   else
-    header_ptr->FT_WriteOpl1_ptr(0xc0 + chan, (inst[insnr].data[10] << 1) + (inst[insnr].tunelev & 1));
+    iRoboPlay->RP_WriteOpl1(0xc0 + chan, (inst[insnr].data[10] << 1) + (inst[insnr].tunelev & 1));
 }
 
 void FT_PlayNote(uint8_t chan)
 {
   // set misc vars & play
-  header_ptr->FT_WriteOpl1_ptr(0xb0 + chan, 0);   // stop old note
+  iRoboPlay->RP_WriteOpl1(0xb0 + chan, 0);   // stop old note
   FT_SetInst(chan);
   channel[chan].key = 1;
   FT_SetFreq(chan);

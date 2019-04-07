@@ -9,52 +9,52 @@
 
 #include <string.h>
 #include <stdint.h>
-#include "fusion-c/header/msx_fusion.h"
-#include "fusion-c/header/newTypes.h"
+#include "../fusion-c/header/msx_fusion.h"
+#include "../fusion-c/header/newTypes.h"
 
-#include "player.h"
+#include "../player.h"
 #include "dro2.h"
 
-ROBO_PLAYER_HEADER* header_ptr;
+ROBO_PLAYER_INTERFACE* iRoboPlay;
 
-boolean FT_load(char* fileName)
+boolean RP_Load(char* fileName)
 {  
     uint8_t  i;
     uint16_t bytesRead;
     uint8_t* destination;
 
-    header_ptr = (void *)ROBO_PLAYER_BASE;
-    header_ptr->FT_Open_ptr(fileName);
+    iRoboPlay = (void *)ROBO_PLAYER_BASE;
+    iRoboPlay->RP_Open(fileName);
 
-    header_ptr->FT_Read_ptr(&dro2Header, sizeof(DRO2_HEADER));
+    iRoboPlay->RP_Read(&dro2Header, sizeof(DRO2_HEADER));
     if (strncmp(dro2Header.signature, "DBRAWOPL", sizeof(dro2Header.signature)))
     {
-        header_ptr->FT_Close_ptr();        
+        iRoboPlay->RP_Close();        
         return false;
     }
     if(dro2Header.versionMajor != 2)
     {
-        header_ptr->FT_Close_ptr();        
+        iRoboPlay->RP_Close();        
         return false;
     }
-    header_ptr->FT_Read_ptr(codeMap, dro2Header.codeMapLength);
+    iRoboPlay->RP_Read(codeMap, dro2Header.codeMapLength);
 
     if(dro2Header.hardwareType == HARDWARETYPE_OPL3 || dro2Header.hardwareType == HARDWARETYPE_DUAL_OPL2)
     {
-        header_ptr->FT_WriteOpl2_ptr(0x5, 0x3);
+        iRoboPlay->RP_WriteOpl2(0x5, 0x3);
     }
 
     currentSegment = 0;
     do {
-        segmentList[currentSegment] = header_ptr->FT_AllocateSegment_ptr();
-        header_ptr->FT_SetSegment_ptr(segmentList[currentSegment++]);
+        segmentList[currentSegment] = iRoboPlay->RP_AllocateSegment();
+        iRoboPlay->RP_SetSegment(segmentList[currentSegment++]);
 
-        destination = (uint8_t*)TRACK_DATA;
-        for(i = 0; i < PAGE_SIZE / READ_BUFFER_SIZE; i++)
+        destination = (uint8_t*)SEGMENT_BASE;
+        for(i = 0; i < SEGMENT_SIZE / READ_BUFFER_SIZE; i++)
         {
             // It's not possible to read directly to non-primary mapper memory segments,
             // so use a buffer inbetween.
-            bytesRead = header_ptr->FT_Read_ptr((void*)READ_BUFFER, READ_BUFFER_SIZE);
+            bytesRead = iRoboPlay->RP_Read((void*)READ_BUFFER, READ_BUFFER_SIZE);
             if(!bytesRead) break;
 
             memcpy(destination, (void*)READ_BUFFER, READ_BUFFER_SIZE);
@@ -62,12 +62,12 @@ boolean FT_load(char* fileName)
         }
     } while (bytesRead);
 
-    header_ptr->FT_Close_ptr();
+    iRoboPlay->RP_Close();
 
     return true;
 }
 
-boolean FT_update()
+boolean RP_Update()
 {
     uint8_t registerIndex;
     uint8_t value;
@@ -87,16 +87,16 @@ boolean FT_update()
         }
 
         registerIndex = *songdata++;
-        if(songdata == (void*)(TRACK_DATA + PAGE_SIZE))
+        if(songdata == (void*)(SEGMENT_BASE + SEGMENT_SIZE))
         {
-            songdata = (void*)TRACK_DATA;
-            header_ptr->FT_SetSegment_ptr(segmentList[++currentSegment]);
+            songdata = (void*)SEGMENT_BASE;
+            iRoboPlay->RP_SetSegment(segmentList[++currentSegment]);
         }
         value = *songdata++;
-        if(songdata == (void*)(TRACK_DATA + PAGE_SIZE))
+        if(songdata == (void*)(SEGMENT_BASE + SEGMENT_SIZE))
         {
-            songdata = (void*)TRACK_DATA;
-            header_ptr->FT_SetSegment_ptr(segmentList[++currentSegment]);
+            songdata = (void*)SEGMENT_BASE;
+            iRoboPlay->RP_SetSegment(segmentList[++currentSegment]);
         }
 
         if(registerIndex == dro2Header.shortDelayCode)
@@ -114,59 +114,59 @@ boolean FT_update()
                 registerIndex &= 0x7f;
                 actualRegister = codeMap[registerIndex];
                 if(actualRegister != 2 && actualRegister != 3 && actualRegister != 4)
-                    header_ptr->FT_WriteOpl2_ptr(actualRegister, value);
+                    iRoboPlay->RP_WriteOpl2(actualRegister, value);
             }
             else
             {
                 actualRegister = codeMap[registerIndex];
                 if(actualRegister != 2 && actualRegister != 3 && actualRegister != 4)
-                    header_ptr->FT_WriteOpl1_ptr(actualRegister, value);
+                    iRoboPlay->RP_WriteOpl1(actualRegister, value);
             }
         }
     }
     return true;
 }
 
-void FT_rewind(int8_t subsong)
+void RP_Rewind(int8_t subsong)
 {
     // No subsongs in this format
     subsong;
 
     currentSegment = 0;
-    header_ptr->FT_SetSegment_ptr(segmentList[currentSegment]);
-    songdata = (void*)TRACK_DATA;
+    iRoboPlay->RP_SetSegment(segmentList[currentSegment]);
+    songdata = (void*)SEGMENT_BASE;
 
     delayCounter = 0;
     indexPtr = 0;
 }
 
-float FT_getRefresh()
+float RP_GetRefresh()
 {
     // Fixed replay rate of 1000Hz
     return 1000.0;
 }
 
-uint8_t FT_getSubSongs()
+uint8_t RP_GetSubSongs()
 {
     return 0;
 }
 
-char* FT_getPlayerInfo()
+char* RP_GetPlayerInfo()
 {
     return "DOSBox Raw OPL type 2.0 Player by RoboSoft Inc.";
 }
 
-char* FT_getTitle()
+char* RP_GetTitle()
 {
     return "-";
 }
 
-char* FT_getAuthor()
+char* RP_GetAuthor()
 {
     return "-";
 }
 
-char* FT_getDescription()
+char* RP_GetDescription()
 {
     return "-";
 }

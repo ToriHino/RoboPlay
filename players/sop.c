@@ -9,47 +9,47 @@
 
 #include <string.h>
 #include <stdint.h>
-#include "fusion-c/header/msx_fusion.h"
-#include "fusion-c/header/newTypes.h"
+#include "../fusion-c/header/msx_fusion.h"
+#include "../fusion-c/header/newTypes.h"
 
-#include "player.h"
+#include "../player.h"
 #include "sop.h"
 
-ROBO_PLAYER_HEADER* header_ptr;
+ROBO_PLAYER_INTERFACE* iRoboPlay;
 
-boolean FT_load(char* fileName)
+boolean RP_Load(char* fileName)
 {
     FT_InitVolumeTable();
 
-    header_ptr = (void *)ROBO_PLAYER_BASE;
+    iRoboPlay = (void *)ROBO_PLAYER_BASE;
 
-    header_ptr->FT_Open_ptr(fileName);
-    header_ptr->FT_Read_ptr(&sopHeader, sizeof(SOP_HEADER));
+    iRoboPlay->RP_Open(fileName);
+    iRoboPlay->RP_Read(&sopHeader, sizeof(SOP_HEADER));
     if(strncmp(sopHeader.signature,"sopepos", 7) != 0)
     {
-        header_ptr->FT_Close_ptr();
+        iRoboPlay->RP_Close();
         return false;
     }
 
     if((sopHeader.majorVersion != '\0') || (sopHeader.minorVersion != '\1'))
     {
-        header_ptr->FT_Close_ptr();
+        iRoboPlay->RP_Close();
         return false;
     }
 
     if(!sopHeader.basicTempo) sopHeader.basicTempo = SOP_DEF_TEMPO;
 
-    header_ptr->FT_Read_ptr(chanMode, sopHeader.nTracks);
+    iRoboPlay->RP_Read(chanMode, sopHeader.nTracks);
 
     FT_LoadSOPInstruments();
     FT_LoadSOPTrackData();
 
-    header_ptr->FT_Close_ptr(); 
+    iRoboPlay->RP_Close(); 
 
     return true; 
 }
 
-boolean FT_update()
+boolean RP_Update()
 {
     uint8_t i;
     boolean songEnd = true;
@@ -76,7 +76,7 @@ boolean FT_update()
         if(++tracks[i].counter >= tracks[i].ticks)
         {
             tracks[i].counter = 0;
-            header_ptr->FT_SetSegment_ptr(tracks[i].currentSegment);
+            iRoboPlay->RP_SetSegment(tracks[i].currentSegment);
             while(tracks[i].curEvent < tracks[i].numEvents)
             {
                 FT_ExecuteCommand(i);
@@ -94,7 +94,7 @@ boolean FT_update()
     return !songEnd;
 }
 
-void FT_rewind(int8_t subsong)
+void RP_Rewind(int8_t subsong)
 {
     uint8_t i = 0;
 
@@ -132,7 +132,7 @@ void FT_rewind(int8_t subsong)
         tracks[i].dur = 0;
         tracks[i].counter = 0;
 
-        header_ptr->FT_SetSegment_ptr(tracks[i].currentSegment);
+        iRoboPlay->RP_SetSegment(tracks[i].currentSegment);
         tracks[i].ticks = FT_GetTrackData(i);
         tracks[i].ticks |= FT_GetTrackData(i) << 8;
 
@@ -151,39 +151,39 @@ void FT_rewind(int8_t subsong)
 
     interval = (sopHeader.basicTempo * sopHeader.tickBeat) / 60;
 
-    header_ptr->FT_WriteOpl2_ptr(5, 3); /* YMF-262M Mode */
-    header_ptr->FT_WriteOpl1_ptr(8, 0);
-    header_ptr->FT_WriteOpl1_ptr(1, 0x20);
+    iRoboPlay->RP_WriteOpl2(5, 3); /* YMF-262M Mode */
+    iRoboPlay->RP_WriteOpl1(8, 0);
+    iRoboPlay->RP_WriteOpl1(1, 0x20);
 
     FT_SetPercussionMode(sopHeader.percussive);
 }
 
-float FT_getRefresh()
+float RP_GetRefresh()
 {
     return interval;
 }
 
-uint8_t FT_getSubSongs()
+uint8_t RP_GetSubSongs()
 {
     return 0;
 }
 
-char* FT_getPlayerInfo()
+char* RP_GetPlayerInfo()
 {
     return "Note OPL3 Music Sequencer player by RoboSoft Inc.";
 }
 
-char* FT_getTitle()
+char* RP_GetTitle()
 {
     return sopHeader.title;
 }
 
-char* FT_getAuthor()
+char* RP_GetAuthor()
 {
     return "-";
 }
 
-char* FT_getDescription()
+char* RP_GetDescription()
 {
     return sopHeader.comment;
 }
@@ -265,28 +265,28 @@ void FT_SetTempo(uint8_t tempo)
 {
     interval = (tempo * sopHeader.tickBeat) / 60;
 
-    header_ptr->FT_UpdateRefresh_ptr();
+    iRoboPlay->RP_UpdateRefresh();
 }
 
 boolean FT_LoadSOPInstruments()
 {
     uint8_t i;
 
-    header_ptr->FT_SetSegment_ptr(0);
+    iRoboPlay->RP_SetSegment(0);
 
     instruments = (SOP_INST*)INSTRUMENTS_BASE;
     for(i = 0; i < sopHeader.nInsts; i++)
     {
-        header_ptr->FT_Read_ptr(&instruments[i], 1+8+19);  // instType + shortName + longName
+        iRoboPlay->RP_Read(&instruments[i], 1+8+19);  // instType + shortName + longName
         switch(instruments[i].instType)
         {
             case INSTRUMENT_TYPE_UNUSED:
                 break;
             case INSTRUMENT_TYPE_MELODY_4OP:
-                header_ptr->FT_Read_ptr(&instruments[i].instData, INSTRUMENT_DATA_SIZE_4OP);
+                iRoboPlay->RP_Read(&instruments[i].instData, INSTRUMENT_DATA_SIZE_4OP);
                 break;
             default:
-                header_ptr->FT_Read_ptr(&instruments[i].instData, INSTRUMENT_DATA_SIZE_2OP);
+                iRoboPlay->RP_Read(&instruments[i].instData, INSTRUMENT_DATA_SIZE_2OP);
         }
     }
 
@@ -299,20 +299,20 @@ boolean FT_LoadSOPTrackData()
 
     uint32_t dataSize = 0;
     uint16_t readSize = 0;
-    uint16_t pageLeft  = PAGE_SIZE;
+    uint16_t pageLeft  = SEGMENT_SIZE;
     uint16_t bytesRead = 0;
 
     uint8_t* destination = (uint8_t *)SOP_EVNT_BASE;
     uint8_t  currentSegment = 1;
 
-    header_ptr->FT_SetSegment_ptr(currentSegment);
+    iRoboPlay->RP_SetSegment(currentSegment);
     for(i = 0; i < sopHeader.nTracks+1; i++)
     {
         tracks[i].startSegment = currentSegment;
         tracks[i].startData = destination;
 
-        header_ptr->FT_Read_ptr(&tracks[i].numEvents, sizeof(tracks[i].numEvents));
-        header_ptr->FT_Read_ptr(&dataSize, sizeof(dataSize));
+        iRoboPlay->RP_Read(&tracks[i].numEvents, sizeof(tracks[i].numEvents));
+        iRoboPlay->RP_Read(&dataSize, sizeof(dataSize));
 
         while(dataSize > 0)
         {
@@ -321,7 +321,7 @@ boolean FT_LoadSOPTrackData()
 
             // It's not possible to read directly to non-primary mapper memory segments,
             // so use a buffer inbetween.
-            bytesRead = header_ptr->FT_Read_ptr((void*)READ_BUFFER, readSize);
+            bytesRead = iRoboPlay->RP_Read((void*)READ_BUFFER, readSize);
             memcpy(destination, (void*)READ_BUFFER, bytesRead);
 
             dataSize -= bytesRead;
@@ -329,9 +329,9 @@ boolean FT_LoadSOPTrackData()
             pageLeft -= bytesRead;
             if(pageLeft == 0)
             {
-                header_ptr->FT_SetSegment_ptr(++currentSegment);
+                iRoboPlay->RP_SetSegment(++currentSegment);
 
-                pageLeft = PAGE_SIZE;
+                pageLeft = SEGMENT_SIZE;
                 destination = (uint8_t *)SOP_EVNT_BASE;
             }
         }
@@ -343,13 +343,13 @@ boolean FT_LoadSOPTrackData()
 void FT_WriteOpl1(uint8_t addr, uint8_t value)
 {
     if(addr >= 0xB0) ymbuf[addr - 0xB0] = value;
-    header_ptr->FT_WriteOpl1_ptr(addr, value);
+    iRoboPlay->RP_WriteOpl1(addr, value);
 }
 
 void FT_WriteOpl2(byte addr, byte value)
 {
     if(addr >= 0xB0) ymbuf[YMB_SIZE - 0xB0 + addr] = value;
-    header_ptr->FT_WriteOpl2_ptr(addr, value);
+    iRoboPlay->RP_WriteOpl2(addr, value);
 }
 
 void FT_Set4OPMode(uint8_t channel, uint8_t value)
@@ -373,7 +373,7 @@ void FT_Set4OPMode(uint8_t channel, uint8_t value)
                 OP_MASK &= (0xFF -(0x01 << channel));
         }
 
-        header_ptr->FT_WriteOpl2_ptr(0x04, OP_MASK);
+        iRoboPlay->RP_WriteOpl2(0x04, OP_MASK);
     }
 }
 
@@ -479,12 +479,12 @@ void FT_NoteOff(uint8_t channel)
 void FT_SetVoiceVolume(uint8_t chan, uint8_t vol)
 {    
     uint16_t volume;
-    unsigned char KSL_value;
+    int8_t KSL_value;
 
     if (chan > 2 && OP4[chan - 3])
         return;
 
-    header_ptr->FT_SetSegment_ptr(VOLUME_SEGMENT);
+    iRoboPlay->RP_SetSegment(VOLUME_SEGMENT);
 
     if (vol > MAX_VOLUME)
         vol = MAX_VOLUME;
@@ -554,7 +554,7 @@ void FT_SetVoiceVolume(uint8_t chan, uint8_t vol)
         }
     }   
 
-    header_ptr->FT_SetSegment_ptr(tracks[chan].currentSegment);
+    iRoboPlay->RP_SetSegment(tracks[chan].currentSegment);
 }
 
 void FT_SendIns(uint16_t base_addr, uint8_t* value, boolean mode)
@@ -584,7 +584,7 @@ void FT_SetVoiceTimbre(uint8_t chan, uint8_t* array)
     if (chan > 2 && OP4[chan - 3])
         return;
 
-    header_ptr->FT_SetSegment_ptr(INSTRUMENT_SEGMENT);
+    iRoboPlay->RP_SetSegment(INSTRUMENT_SEGMENT);
 
     if (!percussion)
         Slot_Number = SlotX[chan];
@@ -664,7 +664,7 @@ void FT_SetVoiceTimbre(uint8_t chan, uint8_t* array)
         FT_WriteOpl1(i, KSL_value | Stereo[chan]);
     }
 
-    header_ptr->FT_SetSegment_ptr(tracks[chan].currentSegment);
+    iRoboPlay->RP_SetSegment(tracks[chan].currentSegment);
 }
 
 void FT_SetStereoPAN(uint8_t chan, uint8_t value)
@@ -718,10 +718,10 @@ uint8_t FT_GetTrackData(uint8_t track)
 {   
     uint8_t data = *(tracks[track].currentData++);
 
-    if(tracks[track].currentData == (uint8_t *)(SOP_EVNT_BASE + PAGE_SIZE))
+    if(tracks[track].currentData == (uint8_t *)(SOP_EVNT_BASE + SEGMENT_SIZE))
     {
         tracks[track].currentSegment++;
-        header_ptr->FT_SetSegment_ptr(tracks[track].currentSegment);
+        iRoboPlay->RP_SetSegment(tracks[track].currentSegment);
         tracks[track].currentData = (uint8_t*)SOP_EVNT_BASE;
     }
     return data;

@@ -39,7 +39,7 @@ LDFLAGS = --code-loc $(ADDR_CODE) --data-loc $(ADDR_DATA) -L $(LIBDIR) $(INC1) $
 
 REL = 
 
-all: $(TARGETNAME).com dro2.ply sop.ply d00.ply raw.ply clean
+all: $(TARGETNAME).com rad.ply rol.ply dro2.ply sop.ply d00.ply raw.ply clean
 
 $(TARGETNAME).com: $(REL)
 	sdcc $(CFLAGS) $(TARGETNAME).c $(REL) $(LDFLAGS)
@@ -50,7 +50,7 @@ $(TARGETNAME).com: $(REL)
 	hex2bin -e ply $<
 	copy $@ $(DEST)\$@ /y
 
-%.ihx: %.c player.rel
+%.ihx: players\%.c player.rel
 	sdcc $(CFLAGS) $< player.rel --code-loc 0x4030 --data-loc 0x0
 
 %.rel: %.c

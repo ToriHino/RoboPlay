@@ -8,48 +8,42 @@
 #ifndef __PLAYER_H
 #define __PLAYER_H
 
-#define TRACK_DATA       0x8000
-#define PAGE_SIZE        0x4000
-
 #define ROBO_PLAYER_BASE 0x4000
+
+#define SEGMENT_BASE     0x8000
+#define SEGMENT_SIZE     0x4000
 
 typedef struct
 {
     char signature[8];
-    byte majorVersion;
-    byte minorVersion;
+    uint8_t majorVersion;
+    uint8_t minorVersion;
 
-    // To be implemented by player
-    boolean (*FT_load_ptr)(char* fileName);
-    boolean (*FT_update_ptr)();
-    void (*FT_rewind_ptr)(int8_t subsong);
-    float (*FT_getRefresh_ptr)();
+    // To be implemented by the player
+    boolean (*RP_Load)(char* fileName);
+    boolean (*RP_Update)();
+    void (*RP_Rewind)(int8_t subsong);
+    float (*RP_GetRefresh)();
 
-    uint8_t (*FT_getSubSongs_ptr)();
+    uint8_t (*RP_GetSubSongs)();
 
-    char* (*FT_getPlayerInfo_ptr)();
-    char* (*FT_getTitle_ptr)();
-    char* (*FT_getAuthor_ptr)();
-    char* (*FT_getDescription_ptr)();
+    char* (*RP_GetPlayerInfo)();
+    char* (*RP_GetTitle)();
+    char* (*RP_GetAuthor)();
+    char* (*RP_GetDescription)();
 
     // Callbacks to RoboPlay environment
-    void (*FT_Open_ptr)(char *name);
-    uint16_t (*FT_Read_ptr)(void *buf, uint16_t nbytes);
-    void (*FT_Close_ptr)();
+    void (*RP_Open)(char *name);
+    uint16_t (*RP_Read)(void *buf, uint16_t nbytes);
+    void (*RP_Close)();
 
-    byte (*FT_AllocateSegment_ptr)();
-    void (*FT_SetSegment_ptr)(uint8_t segment);
+    byte (*RP_AllocateSegment)();
+    void (*RP_SetSegment)(uint8_t segment);
 
-    void (*FT_UpdateRefresh_ptr)();
+    void (*RP_UpdateRefresh)();
 
-    void (*FT_WriteOpl1_ptr)(uint8_t addr, uint8_t value);
-    void (*FT_WriteOpl2_ptr)(uint8_t addr, uint8_t value);
-} ROBO_PLAYER_HEADER;
-
-extern boolean FT_load(char* fileName);
-extern boolean FT_update();
-extern void FT_rewind(int8_t subsong);
-extern float FT_getRefresh();
-extern uint8_t FT_getSubSongs();
+    void (*RP_WriteOpl1)(uint8_t addr, uint8_t value);
+    void (*RP_WriteOpl2)(uint8_t addr, uint8_t value);
+} ROBO_PLAYER_INTERFACE;
 
 #endif

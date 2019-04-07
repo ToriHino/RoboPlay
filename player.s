@@ -5,15 +5,15 @@
 ;
 ; Made with FUSION-C in SDCC
 ;
-    .globl  _FT_load
-    .globl  _FT_update
-    .globl  _FT_rewind
-    .globl  _FT_getRefresh
-    .globl  _FT_getSubSongs
-    .globl  _FT_getPlayerInfo
-    .globl  _FT_getTitle
-    .globl  _FT_getAuthor
-    .globl  _FT_getDescription
+    .globl  _RP_Load
+    .globl  _RP_Update
+    .globl  _RP_Rewind
+    .globl  _RP_GetRefresh
+    .globl  _RP_GetSubSongs
+    .globl  _RP_GetPlayerInfo
+    .globl  _RP_GetTitle
+    .globl  _RP_GetAuthor
+    .globl  _RP_GetDescription
 
     .area   _HEADER (ABS)
 
@@ -31,15 +31,15 @@
     .db 0x01    ; Major version
     .db 0x00    ; Minor version
 
-    .dw _FT_load
-    .dw _FT_update
-    .dw _FT_rewind
-    .dw _FT_getRefresh
-    .dw _FT_getSubSongs
-    .dw _FT_getPlayerInfo
-    .dw _FT_getTitle
-    .dw _FT_getAuthor
-    .dw _FT_getDescription
+    .dw _RP_Load
+    .dw _RP_Update
+    .dw _RP_Rewind
+    .dw _RP_GetRefresh
+    .dw _RP_GetSubSongs
+    .dw _RP_GetPlayerInfo
+    .dw _RP_GetTitle
+    .dw _RP_GetAuthor
+    .dw _RP_GetDescription
 
     .org    0x4030  ;RoboPlay player code start adress
 

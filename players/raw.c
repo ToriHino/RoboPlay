@@ -9,41 +9,41 @@
 
 #include <string.h>
 #include <stdint.h>
-#include "fusion-c/header/msx_fusion.h"
-#include "fusion-c/header/newTypes.h"
+#include "../fusion-c/header/msx_fusion.h"
+#include "../fusion-c/header/newTypes.h"
 
-#include "player.h"
+#include "../player.h"
 #include "raw.h"
 
-ROBO_PLAYER_HEADER* header_ptr;
+ROBO_PLAYER_INTERFACE* iRoboPlay;
 
-boolean FT_load(char* fileName)
+boolean RP_Load(char* fileName)
 {  
     uint8_t  i;
     uint16_t bytesRead;
     uint8_t* destination;
 
-    header_ptr = (void *)ROBO_PLAYER_BASE;
-    header_ptr->FT_Open_ptr(fileName);
+    iRoboPlay = (void *)ROBO_PLAYER_BASE;
+    iRoboPlay->RP_Open(fileName);
 
-    header_ptr->FT_Read_ptr(&rawHeader, sizeof(RAW_HEADER));
+    iRoboPlay->RP_Read(&rawHeader, sizeof(RAW_HEADER));
     if (strncmp(rawHeader.signature, "RAWADATA", sizeof(rawHeader.signature)))
     {
-        header_ptr->FT_Close_ptr();        
+        iRoboPlay->RP_Close();        
         return false;
     }
 
     currentSegment = 0;
     do {
-        segmentList[currentSegment] = header_ptr->FT_AllocateSegment_ptr();
-        header_ptr->FT_SetSegment_ptr(segmentList[currentSegment++]);
+        segmentList[currentSegment] = iRoboPlay->RP_AllocateSegment();
+        iRoboPlay->RP_SetSegment(segmentList[currentSegment++]);
 
-        destination = (uint8_t*)TRACK_DATA;
-        for(i = 0; i < PAGE_SIZE / READ_BUFFER_SIZE; i++)
+        destination = (uint8_t*)SEGMENT_BASE;
+        for(i = 0; i < SEGMENT_SIZE / READ_BUFFER_SIZE; i++)
         {
             // It's not possible to read directly to non-primary mapper memory segments,
             // so use a buffer inbetween.
-            bytesRead = header_ptr->FT_Read_ptr((void*)READ_BUFFER, READ_BUFFER_SIZE);
+            bytesRead = iRoboPlay->RP_Read((void*)READ_BUFFER, READ_BUFFER_SIZE);
             if(!bytesRead) break;
 
             memcpy(destination, (void*)READ_BUFFER, READ_BUFFER_SIZE);
@@ -53,21 +53,21 @@ boolean FT_load(char* fileName)
 
     for(i = 0; i < 2; i++)
     {
-        if(destination >= (uint8_t*)PAGE_SIZE)
+        if(destination >= (uint8_t*)SEGMENT_SIZE)
         {
-            segmentList[currentSegment] = header_ptr->FT_AllocateSegment_ptr();
-            header_ptr->FT_SetSegment_ptr(segmentList[currentSegment++]);
-            destination = (uint8_t*)TRACK_DATA;
+            segmentList[currentSegment] = iRoboPlay->RP_AllocateSegment();
+            iRoboPlay->RP_SetSegment(segmentList[currentSegment++]);
+            destination = (uint8_t*)SEGMENT_BASE;
         }
         *destination++ = 0xff;
     }
 
-    header_ptr->FT_Close_ptr();
+    iRoboPlay->RP_Close();
 
     return true;
 }
 
-boolean FT_update()
+boolean RP_Update()
 {
     uint16_t tmp;
 
@@ -83,10 +83,10 @@ boolean FT_update()
     {
         setspeed = false;
 
-        if(pos >= PAGE_SIZE/2)
+        if(pos >= SEGMENT_SIZE/2)
         {
             pos = 0;
-            header_ptr->FT_SetSegment_ptr(++currentSegment);
+            iRoboPlay->RP_SetSegment(++currentSegment);
         }
 
         switch(songdata[pos].command)
@@ -100,14 +100,14 @@ boolean FT_update()
                 {
                     setspeed = true;
                     pos++;
-                    if(pos >= PAGE_SIZE/2)
+                    if(pos >= SEGMENT_SIZE/2)
                     {
                         pos = 0;
-                        header_ptr->FT_SetSegment_ptr(++currentSegment);
+                        iRoboPlay->RP_SetSegment(++currentSegment);
                     }
                     tmp = songdata[pos].command << 8;
                     speed = songdata[pos].param + tmp;
-                    header_ptr->FT_UpdateRefresh_ptr();
+                    iRoboPlay->RP_UpdateRefresh();
                 }
                 else
                 {
@@ -123,9 +123,9 @@ boolean FT_update()
                 if(songdata[pos].command != 2 && songdata[pos].command != 3 && songdata[pos].command != 4)
                 {
                     if(highOPL)
-                        header_ptr->FT_WriteOpl2_ptr(songdata[pos].command, songdata[pos].param);
+                        iRoboPlay->RP_WriteOpl2(songdata[pos].command, songdata[pos].param);
                     else
-                        header_ptr->FT_WriteOpl1_ptr(songdata[pos].command, songdata[pos].param);
+                        iRoboPlay->RP_WriteOpl1(songdata[pos].command, songdata[pos].param);
                 }
         }
     } while (songdata[pos++].command || setspeed);
@@ -133,49 +133,49 @@ boolean FT_update()
     return true;
 }
 
-void FT_rewind(int8_t subsong)
+void RP_Rewind(int8_t subsong)
 {
     // No subsongs in this format
     subsong;
 
     currentSegment = 0;
-    header_ptr->FT_SetSegment_ptr(segmentList[currentSegment]);
-    songdata = (RAW_DATA*)TRACK_DATA;
+    iRoboPlay->RP_SetSegment(segmentList[currentSegment]);
+    songdata = (RAW_DATA*)SEGMENT_BASE;
     pos = 0;
 
     delayCounter = 0;
     speed = rawHeader.clock;
     highOPL = false;
 
-    header_ptr->FT_WriteOpl1_ptr(1, 32);    // Go to 9 channel mode
+    iRoboPlay->RP_WriteOpl1(1, 32);    // Go to 9 channel mode
 }
 
-float FT_getRefresh()
+float RP_GetRefresh()
 { 
     return 1193180.0 / (float)(speed ? speed : 0xffff);
 }
 
-uint8_t FT_getSubSongs()
+uint8_t RP_GetSubSongs()
 {
     return 0;
 }
 
-char* FT_getPlayerInfo()
+char* RP_GetPlayerInfo()
 {
     return "Raw AdLib Capture player by RoboSoft Inc.";
 }
 
-char* FT_getTitle()
+char* RP_GetTitle()
 {
     return "-";
 }
 
-char* FT_getAuthor()
+char* RP_GetAuthor()
 {
     return "-";
 }
 
-char* FT_getDescription()
+char* RP_GetDescription()
 {
     return "-";
 }
