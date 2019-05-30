@@ -36,6 +36,7 @@ typedef struct
     void (*RP_Open)(char *name);
     uint16_t (*RP_Read)(void *buf, uint16_t nbytes);
     void (*RP_Close)();
+    boolean (*RP_Exists)(char *name);
 
     byte (*RP_AllocateSegment)();
     void (*RP_SetSegment)(uint8_t segment);

@@ -98,6 +98,21 @@ void FT_SetSegment(uint8_t segment)
 
 void FT_WriteOpl1(uint8_t addr, uint8_t value)
 {
+    addr;
+    value;
+
+    __asm
+    ld  hl, #2+0
+    add hl, sp
+    ld  a,(hl)
+    out (OPL4_REG),a
+    ld  hl, #3+0
+    add hl, sp
+    ld  a,(hl)
+    out (OPL4_DATA),a
+    __endasm;
+
+/*
     uint8_t busy = 0;
 
     do
@@ -111,6 +126,7 @@ void FT_WriteOpl1(uint8_t addr, uint8_t value)
         busy = InPort(OPL4_REG);
     } while(busy & 1);
     OutPort(OPL4_DATA, value);   
+*/
 }
 
 //
@@ -119,6 +135,20 @@ void FT_WriteOpl1(uint8_t addr, uint8_t value)
 
 void FT_WriteOpl2(uint8_t addr, uint8_t value)
 {
+    addr;
+    value;
+    
+    __asm
+    ld  hl, #2+0
+    add hl, sp
+    ld  a,(hl)
+    out (OPL4_REG2),a
+    ld  hl, #3+0
+    add hl, sp
+    ld  a,(hl)
+    out (OPL4_DATA2),a
+    __endasm;
+/*   
     uint8_t busy = 0;
 
     do    
@@ -132,7 +162,8 @@ void FT_WriteOpl2(uint8_t addr, uint8_t value)
     {
         busy = InPort(OPL4_REG);
     } while(busy & 1);
-    OutPort(OPL4_DATA, value);
+    OutPort(OPL4_DATA2, value);
+*/
 }
 
 //
@@ -144,12 +175,14 @@ void FT_SetRefresh()
     if( refresh > 50.0)
     {
         FT_WriteOpl1(OPL4_TIMER1_COUNT, 255 - (uint8_t)( (1000.0 / refresh) / 0.08));
-        FT_WriteOpl1(4, 0x01);
+        FT_WriteOpl1(4, 0x21);
+        FT_WriteOpl1(4, 0x80);
     }
     else
     {       
         FT_WriteOpl1(OPL4_TIMER2_COUNT, 255 - (uint8_t)( (1000.0 / refresh) / 0.320) );
-        FT_WriteOpl1(4, 0x02);
+        FT_WriteOpl1(4, 0x42);
+        FT_WriteOpl1(4, 0x80);
     }
 }
 
@@ -158,7 +191,7 @@ void FT_SetRefresh()
 //
 void FT_ResetOPL()
 {
-    uint8_t i = 0;
+    uint8_t i = 0, val;
 
     FT_WriteOpl2(5, 3);
     
@@ -176,8 +209,9 @@ void FT_ResetOPL()
 
     for(i = 20; i < 0xf6; i++)
     {
-        FT_WriteOpl1(i, 0);
-        FT_WriteOpl2(i, 0);
+        val = (i >= 0x60 && i < 0xA0) ? 0xFF : 0;
+        FT_WriteOpl1(i, val);
+        FT_WriteOpl2(i, val);
     }
 
     FT_WriteOpl1(4, 0x80);
@@ -213,6 +247,18 @@ uint16_t FT_Read(void *buf, uint16_t nbytes)
 void FT_Close()
 {
     Close(playerFileHandle);
+    printf(" ...Done\n\r");
+}
+
+//
+// Check if file exists
+//
+boolean FT_Exists(char *name)
+{
+    uint16_t fileHandle = Open(name, O_RDONLY);
+    if(fileHandle != -1) Close(fileHandle);
+
+    return (fileHandle != -1);
 }
 
 //
@@ -248,6 +294,7 @@ void FT_LoadPlayer(char* fileName)
     iRoboPlay->RP_Open =  &FT_Open;
     iRoboPlay->RP_Read =  &FT_Read;
     iRoboPlay->RP_Close = &FT_Close;
+    iRoboPlay->RP_Exists = &FT_Exists;
     
     iRoboPlay->RP_AllocateSegment = &FT_AllocateSegment;
     iRoboPlay->RP_SetSegment = &FT_SetSegment;
@@ -360,8 +407,7 @@ void main(char *argv[], uint16_t argc)
         Exit(__INTER);
     }
 
-    printf(" ...Done\n\r");
-
+    printf("\n\r");
     printf("Title       : %s\n\r", iRoboPlay->RP_GetTitle());
     printf("Author      : %s\n\r", iRoboPlay->RP_GetAuthor());
     printf("Description : %s\n\r", iRoboPlay->RP_GetDescription());

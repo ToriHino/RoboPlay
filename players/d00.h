@@ -10,8 +10,8 @@
 #ifndef __D00_H
 #define __D00_H
 
-#define D00_FILE_DATA     0x8000
-#define D00_MAX_FILE_SIZE 0x4000
+#define D00_FILE_DATA     SEGMENT_BASE
+#define D00_MAX_FILE_SIZE SEGMENT_SIZE
 
 typedef struct 
 {

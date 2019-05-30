@@ -5,10 +5,10 @@
 //
 // Made with FUSION-C in SDCC
 //
-// DRO2: DOSBox Raw OPL v2.0 player
+// DRO: DOSBox Raw OPL v2.0 player
 
-#ifndef __DRO2_H
-#define __DRO2_H
+#ifndef __DRO_H
+#define __DRO_H
 
 #define HARDWARETYPE_OPL2       0
 #define HARDWARETYPE_OPL3       1

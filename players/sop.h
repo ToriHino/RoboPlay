@@ -16,9 +16,6 @@
 #define VOLUME_TABLE_BASE SEGMENT_BASE
 #define VOLUME_TABLE_SIZE 0x2000
 
-#define VOLUME_SEGMENT     0
-#define INSTRUMENT_SEGMENT 0
-
 #define INSTRUMENTS_BASE  (VOLUME_TABLE_BASE + VOLUME_TABLE_SIZE)
 #define SOP_EVNT_BASE     SEGMENT_BASE
 
@@ -201,6 +198,9 @@ const uint8_t DIV12[OCTAVE * 8]={
     6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
     7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7
 };
+
+
+uint8_t inst_vol_segment;
 
 boolean percussion; /* percussion mode parameter */
 

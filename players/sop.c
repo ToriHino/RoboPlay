@@ -96,7 +96,8 @@ boolean RP_Update()
 
 void RP_Rewind(int8_t subsong)
 {
-    uint8_t i = 0;
+    uint8_t  i = 0;
+    uint16_t t = 0;
 
     subsong;
 
@@ -148,8 +149,6 @@ void RP_Rewind(int8_t subsong)
         lastvol[i] = 0;
     }
     masterVolume = SOP_MAX_VOL;
-
-    interval = (sopHeader.basicTempo * sopHeader.tickBeat) / 60;
 
     iRoboPlay->RP_WriteOpl2(5, 3); /* YMF-262M Mode */
     iRoboPlay->RP_WriteOpl1(8, 0);
@@ -263,7 +262,12 @@ void FT_InitVolumeTable()
 
 void FT_SetTempo(uint8_t tempo)
 {
-    interval = (tempo * sopHeader.tickBeat) / 60;
+    uint16_t t;
+    
+    if(!tempo) tempo = sopHeader.basicTempo;
+    
+    t = tempo * sopHeader.tickBeat;
+    interval = t / 60.0;
 
     iRoboPlay->RP_UpdateRefresh();
 }
@@ -272,7 +276,8 @@ boolean FT_LoadSOPInstruments()
 {
     uint8_t i;
 
-    iRoboPlay->RP_SetSegment(0);
+    inst_vol_segment = iRoboPlay->RP_AllocateSegment();
+    iRoboPlay->RP_SetSegment(inst_vol_segment);
 
     instruments = (SOP_INST*)INSTRUMENTS_BASE;
     for(i = 0; i < sopHeader.nInsts; i++)
@@ -303,7 +308,7 @@ boolean FT_LoadSOPTrackData()
     uint16_t bytesRead = 0;
 
     uint8_t* destination = (uint8_t *)SOP_EVNT_BASE;
-    uint8_t  currentSegment = 1;
+    uint8_t  currentSegment = iRoboPlay->RP_AllocateSegment();
 
     iRoboPlay->RP_SetSegment(currentSegment);
     for(i = 0; i < sopHeader.nTracks+1; i++)
@@ -329,7 +334,8 @@ boolean FT_LoadSOPTrackData()
             pageLeft -= bytesRead;
             if(pageLeft == 0)
             {
-                iRoboPlay->RP_SetSegment(++currentSegment);
+                currentSegment = iRoboPlay->RP_AllocateSegment();
+                iRoboPlay->RP_SetSegment(currentSegment);
 
                 pageLeft = SEGMENT_SIZE;
                 destination = (uint8_t *)SOP_EVNT_BASE;
@@ -484,7 +490,7 @@ void FT_SetVoiceVolume(uint8_t chan, uint8_t vol)
     if (chan > 2 && OP4[chan - 3])
         return;
 
-    iRoboPlay->RP_SetSegment(VOLUME_SEGMENT);
+    iRoboPlay->RP_SetSegment(inst_vol_segment);
 
     if (vol > MAX_VOLUME)
         vol = MAX_VOLUME;
@@ -584,7 +590,7 @@ void FT_SetVoiceTimbre(uint8_t chan, uint8_t* array)
     if (chan > 2 && OP4[chan - 3])
         return;
 
-    iRoboPlay->RP_SetSegment(INSTRUMENT_SEGMENT);
+    iRoboPlay->RP_SetSegment(inst_vol_segment);
 
     if (!percussion)
         Slot_Number = SlotX[chan];

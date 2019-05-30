@@ -72,7 +72,7 @@ boolean RP_Load(char* fileName)
             if(header->author[i] == ' ') header->author[i] = '\0';
         }
     }
-    else    // Vesion 1
+    else    // Version 1
     {
         version = header1->version;
         datainfo = (uint8_t *)(filedata + LE_WORD(&header1->infoptr));

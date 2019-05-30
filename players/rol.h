@@ -10,6 +10,9 @@
 #ifndef __ROL_H
 #define __ROL_H
 
+#define READ_BUFFER      0xC000
+#define READ_BUFFER_SIZE 0x1000
+
 #define ROL_FILE_DATA     0x8000
 #define ROL_MAX_FILE_SIZE 0x4000
 
@@ -19,43 +22,49 @@
 #define ROL_NR_CHANNELS 11
 
 #define MAXNOTES             96
+#define MIDPITCH             0x2000
 #define NRSTEPPITCH          25 // 25 steps within a half-tone for pitch bend
 #define NUMSEMITONESINOCTAVE 12
 
 #define MAXVOLUME   0x7F
 #define MAXTICKBEAT 60
 
+#define CARRIER_OP_OFFSET 3
+#define NUM_SEMITONES_IN_OCTAVE 12
+
 #define SILENCENOTE -12
 
 #define BASSDRUMCHANNEL  6
-#define SNAREDRUMCHANNEl 7
+#define SNAREDRUMCHANNEL 7
 #define TOMTOMCHANNEL    8
 #define TOMTOMNOTE       24
 #define TOMTOMTOSNARE    7    // 7 half-tones between voice 7 & 8
 #define SNARENOTE        TOMTOMNOTE + TOMTOMTOSNARE
 
+#define NUM_MELODIC_VOICES    9
+#define NUM_PERCUSSIVE_VOICES 11
 
-#define OPL2_WaveCtrlBaseAddress      = 0x01 // Test LSI / Enable waveform control
-#define OPL2_AaMultiBaseAddress       = 0x20 // Amp Mod / Vibrato / EG type / Key Scaling / Multiple
-#define OPL2_KSLTLBaseAddress         = 0x40 // Key scaling level / Operator output level
-#define OPL2_ArDrBaseAddress          = 0x60 // Attack Rate / Decay Rate
-#define OPL2_SlrrBaseAddress          = 0x80 // Sustain Level / Release Rate
-#define OPL2_FreqLoBaseAddress        = 0xA0 // Frequency (low 8 bits)
-#define OPL2_KeyOnFreqHiBaseAddress   = 0xB0 // Key On / Octave / Frequency (high 2 bits)
-#define OPL2_AmVibRhythmBaseAddress   = 0xBD // AM depth / Vibrato depth / Rhythm control
-#define OPL2_FeedConBaseAddress       = 0xC0 // Feedback strength / Connection type
-#define OPL2_WaveformBaseAddress      = 0xE0 // Waveform select
+#define OPL2_WaveCtrlBaseAddress      0x01 // Test LSI / Enable waveform control
+#define OPL2_AaMultiBaseAddress       0x20 // Amp Mod / Vibrato / EG type / Key Scaling / Multiple
+#define OPL2_KSLTLBaseAddress         0x40 // Key scaling level / Operator output level
+#define OPL2_ArDrBaseAddress          0x60 // Attack Rate / Decay Rate
+#define OPL2_SlrrBaseAddress          0x80 // Sustain Level / Release Rate
+#define OPL2_FreqLoBaseAddress        0xA0 // Frequency (low 8 bits)
+#define OPL2_KeyOnFreqHiBaseAddress   0xB0 // Key On / Octave / Frequency (high 2 bits)
+#define OPL2_AmVibRhythmBaseAddress   0xBD // AM depth / Vibrato depth / Rhythm control
+#define OPL2_FeedConBaseAddress       0xC0 // Feedback strength / Connection type
+#define OPL2_WaveformBaseAddress      0xE0 // Waveform select
 
-#define OPL2_EnableWaveformSelectMask = 0x20
-#define OPL2_KeyOnMask                = 0x20
-#define OPL2_RhythmMask               = 0x20
-#define OPL2_KSLMask                  = 0xC0
-#define OPL2_TLMask                   = 0x3F
-#define OPL2_TLMinLevel               = 0x3F
-#define OPL2_FNumLSBMask              = 0xFF
-#define OPL2_FNumMSBMask              = 0x03
-#define OPL2_FNumMSBShift             = 0x08
-#define OPL2_BlockNumberShift         = 0x02
+#define OPL2_EnableWaveformSelectMask 0x20
+#define OPL2_KeyOnMask                0x20
+#define OPL2_RhythmMask               0x20
+#define OPL2_KSLMask                  0xC0
+#define OPL2_TLMask                   0x3F
+#define OPL2_TLMinLevel               0x3F
+#define OPL2_FNumLSBMask              0xFF
+#define OPL2_FNumMSBMask              0x03
+#define OPL2_FNumMSBShift             0x08
+#define OPL2_BlockNumberShift         0x02
 
 static uint8_t const NoteOctave[MAXNOTES] =
 {
@@ -139,7 +148,7 @@ typedef struct
     char       trackName[15];
     float      basicTempo;
     uint16_t   nEvents;
-    ROL_TEMPO* tempoEvents; 
+    ROL_TEMPO  tempoEvents[];
 } ROL_TEMPO_TRACK;
 
 typedef struct
@@ -152,22 +161,22 @@ typedef struct
 {
     char      trackName[15];
     uint16_t  nTicks;
-    ROL_NOTE* noteEvents;
+    ROL_NOTE  noteEvents[];
 } ROL_VOICE_TRACK;
 
 typedef struct 
 {
     uint16_t atTick;
     char     instName[9];
-    uint8_t  filler;
-    uint16_t unknown;
+    uint8_t  filler;        // Used for segment index
+    uint16_t unknown;       // Used for address
 } ROL_TIMBRE;
 
 typedef struct
 {
     char        trackName[15];
     uint16_t    nEvents;
-    ROL_TIMBRE* timbreEvents;
+    ROL_TIMBRE  timbreEvents[];
 } ROL_TIMBRE_TRACK;
 
 typedef struct
@@ -180,7 +189,7 @@ typedef struct
 {
     char        trackName[15];
     uint16_t    nEvents;
-    ROL_VOLUME* volumeEvents;
+    ROL_VOLUME  volumeEvents[];
 } ROL_VOLUME_TRACK;
 
 typedef struct
@@ -193,7 +202,7 @@ typedef struct
 {
     char       trackName[15];
     uint16_t   nEvents;
-    ROL_PITCH* pitchEvents;
+    ROL_PITCH  pitchEvents[];
 } ROL_PITCH_TRACK;
 
 typedef struct
@@ -219,9 +228,53 @@ typedef struct
     ROL_PITCH_TRACK*  pitchTrack;
 } ROL_VOICE_DATA;
 
+typedef struct 
+{
+    uint8_t ammulti;
+    uint8_t ksltl;
+    uint8_t ardr;  
+    uint8_t slrr;
+    uint8_t fbc;
+    uint8_t waveform;    
+} SOPL2OP;
+
+typedef struct
+{
+    uint8_t mode;
+    uint8_t voice_number;
+    SOPL2OP modulator;
+    SOPL2OP carrier;    
+} SRolInstrument;
+
+typedef struct 
+{
+    uint8_t  verMajor;
+    uint8_t  verMinor;
+    char     signature[6];
+    uint16_t numUsed;
+    uint16_t numInstruments;
+    uint32_t offsetName;
+    uint32_t offsetData;
+    uint8_t  pad[8];
+} BNK_HEADER;
+
+typedef struct
+{
+    uint16_t index;
+    uint8_t  flags;
+    char     name[9];
+} BNK_INSTRUMENT_HEADER;
+
 ROL_HEADER       rolHeader;
 ROL_VOICE_DATA   voiceData[ROL_NR_CHANNELS];
 ROL_TEMPO_TRACK* tempoTrack;
+
+uint8_t segmentList[256];
+uint8_t currentSegment;
+uint8_t instSegment;
+
+BNK_HEADER* bnkHeader;
+uint8_t* bankdata;
 
 uint16_t currTick;
 uint16_t timeOfLastNote;
@@ -229,15 +282,38 @@ uint16_t nextTempoEvent;
 
 float refresh;
 
+uint16_t HalfToneOffset[NUM_PERCUSSIVE_VOICES];
+uint8_t  VolumeCache[NUM_PERCUSSIVE_VOICES];
+uint8_t  KSLTLCache[NUM_PERCUSSIVE_VOICES];
+uint8_t  NoteCache[NUM_PERCUSSIVE_VOICES];
+uint8_t  KOnOctFNumCache[NUM_PERCUSSIVE_VOICES];
+boolean  KeyOnCache[NUM_PERCUSSIVE_VOICES];
+
+uint8_t AMVibRhythmCache;
+
+uint16_t* OldFNumFreqPtr;
+int32_t   OldPitchBendLength;
+int16_t   OldHalfToneOffset;
+uint16_t  PitchRangeStep;
+
+uint16_t* FNumFreqPtrList[NUM_PERCUSSIVE_VOICES];
+
+void FT_FindInstruments();
+void FT_FindInstrument(ROL_TIMBRE* timbre);
+
 void FT_SetRefresh(const float multiplier);
 void FT_UpdateVoice(const uint8_t voice);
-void FT_SendInstData(const uint8_t voice, char* instName);
+void FT_SendInstData(const uint8_t voice, uint8_t segment, const SRolInstrument* inst);
 void FT_SetVolume(const uint8_t voice, const uint8_t volume);
 void FT_SetNote(const uint8_t voice, const uint16_t note);
-void FT_SetPitch(const uint8_t voice, const float pitch);
-
+void FT_ChangePitch(const uint8_t voice, const uint16_t pitchBend);
+void FT_SetPitch(const uint8_t voice, const float variation);
+void FT_SetFreq(const uint8_t voice, const uint16_t note, const boolean keyOn);
 
 void FT_SetNoteMelodic(const uint8_t voice, const uint16_t note);
 void FT_SetNotePercussive(const uint8_t voice, const uint16_t note);
+
+uint8_t FT_GetKSLTL(const uint8_t voice);
+void FT_SendOperator(const uint8_t voice, SOPL2OP* modulator, SOPL2OP* carrier);
 
 #endif

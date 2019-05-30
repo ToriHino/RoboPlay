@@ -5,7 +5,7 @@
 //
 // Made with FUSION-C in SDCC
 //
-// DRO2: DOSBox Raw OPL v2.0 player
+// DRO: DOSBox Raw OPL v2.0 player
 
 #include <string.h>
 #include <stdint.h>
@@ -13,7 +13,7 @@
 #include "../fusion-c/header/newTypes.h"
 
 #include "../player.h"
-#include "dro2.h"
+#include "dro.h"
 
 ROBO_PLAYER_INTERFACE* iRoboPlay;
 
