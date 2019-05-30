@@ -38,7 +38,7 @@ typedef struct
     void (*RP_Close)();
     boolean (*RP_Exists)(char *name);
 
-    byte (*RP_AllocateSegment)();
+    uint8_t (*RP_AllocateSegment)();
     void (*RP_SetSegment)(uint8_t segment);
 
     void (*RP_UpdateRefresh)();
