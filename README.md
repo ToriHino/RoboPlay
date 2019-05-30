@@ -15,7 +15,7 @@ RoboPlay consists of the main RoboPlay application and a separate player plugin 
 The main application together with all player files can be placed on any folder location, just make sure all players are located in the same folder. Add the location of the main application to the search path to be able to start it from an
 
 The environment variable ROBOPLAY is used to set to location of the players. When for example the RoboPlay folder is located in A:\ROBOPLAY use the following:
-> SET ROBOPLAY = A:\ROBOPLAY
+> SET ROBOPLAY = A:\ROBOPLAY\
 
 # Usage
 To start the player, start the main application followed by optionally the name of the player file and the song file to play.
