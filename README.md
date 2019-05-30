@@ -80,7 +80,7 @@ Next to this the interface also provides a number of methods towards the RoboPla
 >Write value *value* to register *addr* using the second OPL port (*0xC6*)
 
 ## Makefile
-When a new player is added, place it in the *players* subfolder and add the name of the player to line starting with *all*:
+When a new player is added, place it in the *players* subfolder and add the name of the player to the line starting with *all*:
 > all: $(TARGETNAME).com dro.ply sop.ply d00.ply raw.ply clean
 
 All players are linked together with the same assembly file (*player.s*) which provides the binary player headers as well as the entry points used for the ROBO_PLAYER_INTERFACE. 
