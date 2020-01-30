@@ -5,8 +5,6 @@
 //
 // Made with FUSION-C in SDCC
 //
-// OPL4 routines based on "ms2.c" by Avelino Herrera Morales
-// http://msx.atlantes.org/moonsound/ms2.c
 
 #include <stdio.h>
 #include <stdint.h>
