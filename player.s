@@ -41,6 +41,6 @@
     .dw _RP_GetAuthor
     .dw _RP_GetDescription
 
-    .org    0x4030  ;RoboPlay player code start adress
+    .org    0x4050  ;RoboPlay player code start adress
 
     .area   _CODE

@@ -14,13 +14,9 @@
 
 #define ENASLT      0x24
 
-#define OPL4_REG    0xC4
-#define OPL4_DATA   0xC5
-#define OPL4_REG2   0xC6
-#define OPL4_DATA2  0xC7
-
-#define OPL4_TIMER1_COUNT 0x02
-#define OPL4_TIMER2_COUNT 0x03
+#define OPL4_TIMER1_COUNT  0x02
+#define OPL4_TIMER2_COUNT  0x03
+#define OPL4_TIMER_CONTROL 0x04
 
 #define MAX_NR_SEGMENTS 256
 

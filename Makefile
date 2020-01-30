@@ -37,21 +37,28 @@ ADDR_DATA = 0x0
 CFLAGS = --disable-warning 196 -mz80 --no-std-crt0 --opt-code-size
 LDFLAGS = --code-loc $(ADDR_CODE) --data-loc $(ADDR_DATA) -L $(LIBDIR) $(INC1) $(INC2) $(INC3) $(INC4) $(INC5) $(INC6) $(INC7) $(INC8) $(INC9) $(INCA) $(INCB) $(INCC) $(INCD) $(INCE) $(INCF)
 
-REL = 
+REL = opl4.rel 
 
-all: $(TARGETNAME).com dro.ply sop.ply d00.ply raw.ply clean
+all: $(TARGETNAME).com mod.ply vgm.ply dro.ply sop.ply d00.ply raw.ply clean
 
 $(TARGETNAME).com: $(REL)
 	sdcc $(CFLAGS) $(TARGETNAME).c $(REL) $(LDFLAGS)
 	hex2bin -e com $(TARGETNAME).ihx
 	copy $(TARGETNAME).com $(DEST)\$(TARGETNAME).com /y
+	del $(TARGETNAME).com
+
+%.dat: players\%.s
+	sdasz80 -o $(notdir $(basename $<).rel) $<
+	sdcc $(CFLAGS) $(notdir $(basename $<).rel) --code-loc 0x8000
+	hex2bin -e dat $(notdir $(basename $<).ihx)
+	copy $@ $(DEST)\$@ /y
 
 %.ply: %.ihx
 	hex2bin -e ply $<
 	copy $@ $(DEST)\$@ /y
 
 %.ihx: players\%.c player.rel
-	sdcc $(CFLAGS) $< player.rel --code-loc 0x4030 --data-loc 0x0
+	sdcc $(CFLAGS) $< player.rel --code-loc 0x4050 --data-loc 0x0
 
 %.rel: %.c
 	sdcc $(CFLAGS) -c $<
@@ -60,4 +67,4 @@ $(TARGETNAME).com: $(REL)
 	sdasz80 -o $<	
 
 clean:
-	@del /Q *.com *.asm *.lst *.sym *.bin *.ihx *.lk *.map *.noi *.rel *.o *.ply
+	@del /Q *.com *.asm *.lst *.sym *.bin *.ihx *.lk *.map *.noi *.rel *.o *.ply *.dat

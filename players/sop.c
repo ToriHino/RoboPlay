@@ -150,10 +150,6 @@ void RP_Rewind(int8_t subsong)
     }
     masterVolume = SOP_MAX_VOL;
 
-    iRoboPlay->RP_WriteOpl2(5, 3); /* YMF-262M Mode */
-    iRoboPlay->RP_WriteOpl1(8, 0);
-    iRoboPlay->RP_WriteOpl1(1, 0x20);
-
     FT_SetPercussionMode(sopHeader.percussive);
 }
 

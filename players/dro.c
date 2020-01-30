@@ -132,6 +132,9 @@ void RP_Rewind(int8_t subsong)
     // No subsongs in this format
     subsong;
 
+    // Start with standard OPL2 mode
+    iRoboPlay->RP_WriteOpl2(0x05, 0);
+
     currentSegment = 0;
     iRoboPlay->RP_SetSegment(segmentList[currentSegment]);
     songdata = (void*)SEGMENT_BASE;

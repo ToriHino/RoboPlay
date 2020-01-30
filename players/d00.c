@@ -423,6 +423,9 @@ void RP_Rewind(int8_t subsong)
     uint8_t i;
     TPOIN* tpoin;
 
+    // Set to standard OPL2 mode
+    iRoboPlay->RP_WriteOpl2(0x05, 0);
+
     if(subsong == -1) subsong = cursubsong;
 
     if(version > 1)     // do nothing if subsong > number of subsongs

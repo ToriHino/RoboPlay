@@ -13,6 +13,8 @@
 #define SEGMENT_BASE     0x8000
 #define SEGMENT_SIZE     0x4000
 
+#undef __DEBUG
+
 typedef struct
 {
     char signature[8];
@@ -40,11 +42,24 @@ typedef struct
 
     uint8_t (*RP_AllocateSegment)();
     void (*RP_SetSegment)(uint8_t segment);
+    void (*RP_SetDataSegment)();
 
     void (*RP_UpdateRefresh)();
 
     void (*RP_WriteOpl1)(uint8_t addr, uint8_t value);
     void (*RP_WriteOpl2)(uint8_t addr, uint8_t value);
+    void (*RP_WriteWave)(uint8_t addr, uint8_t value);
+    void (*RP_StartWaveDataWrite)();
+    void (*RP_WriteWaveData)(uint8_t value);
+
+    uint8_t (*RP_ReadOpl)();
+    uint8_t (*RP_ReadWave)(uint8_t addr);
+
+#ifdef __DEBUG
+    void (*RP_DebugString)(char* s);
+    void (*RP_DebugHex8)(uint8_t b);
+    void (*RP_DebugHex16)(uint16_t b);
+#endif
 } ROBO_PLAYER_INTERFACE;
 
 #endif

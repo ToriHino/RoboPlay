@@ -1,7 +1,7 @@
 //
 // RoboPlay
 //
-// Copyright (C) 2019 by RoboSoft.
+// Copyright (C) 2020 by RoboSoft.
 //
 // Made with FUSION-C in SDCC
 
@@ -20,16 +20,19 @@
 
 #include "player.h"
 #include "roboplay.h"
+#include "opl4.h"
 
 ROBO_PLAYER_INTERFACE* iRoboPlay;
-uint16_t playerFileHandle;
+int16_t playerFileHandle;
 
 SEGMENT_INFO segmentList[MAX_NR_SEGMENTS];
-uint8_t segmentsFound;
+uint16_t segmentsFound;
 uint8_t segmentAllocationIndex;
 uint8_t currentSlot;
 
 uint8_t subsong;
+
+uint8_t dataSegment;
 
 //
 // Allocate memory segments
@@ -64,12 +67,16 @@ void FT_AllocateSegments()
 //
 uint8_t FT_AllocateSegment()
 {
+    uint8_t segment;
+
     if(segmentAllocationIndex >= segmentsFound)
     {
         Exit(_NORAM);
     }
 
-    return segmentAllocationIndex++;
+    segment = segmentAllocationIndex++;
+
+    return segment;
 }
 
 //
@@ -93,78 +100,13 @@ void FT_SetSegment(uint8_t segment)
 }
 
 //
-// Output to OPL port 1
-// 
-
-void FT_WriteOpl1(uint8_t addr, uint8_t value)
-{
-    addr;
-    value;
-
-    __asm
-    ld  hl, #2+0
-    add hl, sp
-    ld  a,(hl)
-    out (OPL4_REG),a
-    ld  hl, #3+0
-    add hl, sp
-    ld  a,(hl)
-    out (OPL4_DATA),a
-    __endasm;
-
-/*
-    uint8_t busy = 0;
-
-    do
-    {
-        busy = InPort(OPL4_REG);
-    } while(busy & 1);
-    OutPort(OPL4_REG, addr);
-
-    do 
-    {
-        busy = InPort(OPL4_REG);
-    } while(busy & 1);
-    OutPort(OPL4_DATA, value);   
-*/
-}
-
+// Set player data segment on page 2
 //
-// Output to OPL port 2
-// 
-
-void FT_WriteOpl2(uint8_t addr, uint8_t value)
+void FT_SetDataSegment()
 {
-    addr;
-    value;
-    
-    __asm
-    ld  hl, #2+0
-    add hl, sp
-    ld  a,(hl)
-    out (OPL4_REG2),a
-    ld  hl, #3+0
-    add hl, sp
-    ld  a,(hl)
-    out (OPL4_DATA2),a
-    __endasm;
-/*   
-    uint8_t busy = 0;
-
-    do    
-    {
-        busy = InPort(OPL4_REG);
-    } while(busy & 1);
-
-    OutPort(OPL4_REG2, addr);
-
-    do 
-    {
-        busy = InPort(OPL4_REG);
-    } while(busy & 1);
-    OutPort(OPL4_DATA2, value);
-*/
+    FT_SetSegment(dataSegment);
 }
+
 
 //
 // Set refresh rate
@@ -174,48 +116,25 @@ void FT_SetRefresh()
     float refresh = iRoboPlay->RP_GetRefresh();
     if( refresh > 50.0)
     {
-        FT_WriteOpl1(OPL4_TIMER1_COUNT, 255 - (uint8_t)( (1000.0 / refresh) / 0.08));
-        FT_WriteOpl1(4, 0x21);
-        FT_WriteOpl1(4, 0x80);
+        FT_OPL4_FM1_Write(OPL4_TIMER1_COUNT, 255 - (uint8_t)( (1000.0 / refresh) / 0.08));
+        FT_OPL4_FM1_Write(OPL4_TIMER_CONTROL, 0x21);
+        FT_OPL4_FM1_Write(OPL4_TIMER_CONTROL, 0x80);
     }
     else
     {       
-        FT_WriteOpl1(OPL4_TIMER2_COUNT, 255 - (uint8_t)( (1000.0 / refresh) / 0.320) );
-        FT_WriteOpl1(4, 0x42);
-        FT_WriteOpl1(4, 0x80);
+        FT_OPL4_FM1_Write(OPL4_TIMER2_COUNT, 256 - (uint8_t)( (1000.0 / refresh) / 0.320));
+        FT_OPL4_FM1_Write(OPL4_TIMER_CONTROL, 0x42);
+        FT_OPL4_FM1_Write(OPL4_TIMER_CONTROL, 0x80);
     }
 }
 
 //
-// Reset OPL
+// Close file
 //
-void FT_ResetOPL()
+void FT_Close()
 {
-    uint8_t i = 0, val;
-
-    FT_WriteOpl2(5, 3);
-    
-    FT_WriteOpl1(1, 0);
-    FT_WriteOpl1(2, 0);
-    FT_WriteOpl1(3, 0);
-    FT_WriteOpl1(4, 0);
-    FT_WriteOpl1(8, 0);
-
-    FT_WriteOpl2(1, 0);
-    FT_WriteOpl2(2, 0);
-    FT_WriteOpl2(3, 0);
-    FT_WriteOpl2(4, 0);
-    FT_WriteOpl2(8, 0);
-
-    for(i = 20; i < 0xf6; i++)
-    {
-        val = (i >= 0x60 && i < 0xA0) ? 0xFF : 0;
-        FT_WriteOpl1(i, val);
-        FT_WriteOpl2(i, val);
-    }
-
-    FT_WriteOpl1(4, 0x80);
-    FT_WriteOpl2(5, 0);
+    Close(playerFileHandle);
+    playerFileHandle = -1;
 }
 
 //
@@ -223,7 +142,10 @@ void FT_ResetOPL()
 //
 void FT_Open(char *name)
 {
-    printf("Loading file: %s", name);
+    if(playerFileHandle == -1)
+        printf("Loading file: %s", name);
+    else
+        FT_Close();
 
     playerFileHandle = Open(name, O_RDONLY);
 
@@ -242,15 +164,6 @@ uint16_t FT_Read(void *buf, uint16_t nbytes)
 }
 
 //
-// Close file
-//
-void FT_Close()
-{
-    Close(playerFileHandle);
-    printf(" ...Done\n\r");
-}
-
-//
 // Check if file exists
 //
 boolean FT_Exists(char *name)
@@ -261,13 +174,55 @@ boolean FT_Exists(char *name)
     return (fileHandle != -1);
 }
 
+#ifdef __DEBUG
+void FT_DebugString(char* s)
+{
+    printf("%s", s);
+}
+
+void FT_DebugHex8(uint8_t b)
+{
+    printf("%x", b);
+}
+
+void FT_DebugHex16(uint16_t b)
+{
+    printf("%x", b);
+}
+#endif
+
+//
+// Load player data
+//
+void FT_LoadPlayerData(char* fileName)
+{
+    uint16_t fH = 0;
+    
+    printf("Loading data  : %s", fileName);
+
+    // Reserve first segment for player data
+    dataSegment = FT_AllocateSegment();
+
+    fH = Open(fileName, O_RDONLY);
+    if(fH == -1)
+    {
+        Exit(__NOFIL);
+    }
+    Read(fH, (void *)SEGMENT_BASE, SEGMENT_SIZE);
+    Close(fH);
+
+    FT_SetSegment(segmentAllocationIndex);
+
+    printf(" ...Done\n\r");
+}
+
 //
 // Load player module
 //
 void FT_LoadPlayer(char* fileName)
 {
     uint16_t fH = 0;
-    uint8_t i = 0;
+    int8_t   i = 0;
   
     printf("\nLoading player: %s", fileName);
     fH = Open(fileName, O_RDONLY);
@@ -277,7 +232,7 @@ void FT_LoadPlayer(char* fileName)
     }
 
     iRoboPlay = (void *)ROBO_PLAYER_BASE;
-    Read(fH, iRoboPlay, 0x4000);
+    Read(fH, iRoboPlay, SEGMENT_SIZE);
     if(strncmp(iRoboPlay->signature,"ROBOPLAY", 8) != 0)
     {
         printf(" ...Error\n\r");
@@ -289,6 +244,17 @@ void FT_LoadPlayer(char* fileName)
 
     printf(" ...Done\n\r");
 
+
+    i = StrPosStr(fileName, ".PLY");
+    fileName[i+1] = 'D';
+    fileName[i+2] = 'A';
+    fileName[i+3] = 'T';
+
+    if(FT_Exists(fileName))
+    {
+        FT_LoadPlayerData(fileName);
+    }
+
     printf("%s\n\n\r", iRoboPlay->RP_GetPlayerInfo());
 
     iRoboPlay->RP_Open =  &FT_Open;
@@ -298,11 +264,26 @@ void FT_LoadPlayer(char* fileName)
     
     iRoboPlay->RP_AllocateSegment = &FT_AllocateSegment;
     iRoboPlay->RP_SetSegment = &FT_SetSegment;
+    iRoboPlay->RP_SetDataSegment = &FT_SetDataSegment;
 
     iRoboPlay->RP_UpdateRefresh = &FT_SetRefresh;
 
-    iRoboPlay->RP_WriteOpl1 = &FT_WriteOpl1;
-    iRoboPlay->RP_WriteOpl2 = &FT_WriteOpl2;
+    iRoboPlay->RP_WriteOpl1 = &FT_OPL4_FM1_Write;
+    iRoboPlay->RP_WriteOpl2 = &FT_OPL4_FM2_Write;
+
+    iRoboPlay->RP_WriteWave = &FT_OPL4_WAVE_Write;
+
+    iRoboPlay->RP_ReadOpl = &FT_OPL4_Read;
+    iRoboPlay->RP_ReadWave = &FT_OPL4_WAVE_Read;
+
+    iRoboPlay->RP_StartWaveDataWrite = &FT_OPL4_WAVE_StartDataWrite;
+    iRoboPlay->RP_WriteWaveData = &FT_OPL4_WAVE_Data;
+
+#ifdef __DEBUG
+    iRoboPlay->RP_DebugString = &FT_DebugString;
+    iRoboPlay->RP_DebugHex8 = &FT_DebugHex8;
+    iRoboPlay->RP_DebugHex16 = &FT_DebugHex16;
+#endif
 }
 
 //
@@ -351,7 +332,6 @@ boolean FT_LeftPressed()
     return result;
 }
 
-
 //
 // Main
 //
@@ -363,18 +343,37 @@ void main(char *argv[], uint16_t argc)
     char  playerName[13];
     char* environment = "ROBOPLAY";
 
-    printf("RoboPlay v0.4 - Multi format player for OPL3/4\n\r");
-    printf("Copyright (C) 2019 RoboSoft Inc.\n\r");
+    uint8_t instrument = 0;
+
+    printf("RoboPlay v0.6 - MSX Multi music format player for OPL3/4\n\r");
+    printf("Copyright (C) 2020 RoboSoft Inc.\n\r");
+
+    printf("\n\rDetecting OPL4 device ");
+    if(!FT_OPL4_Detect())
+    {
+       printf("...Not Found\n\r");
+       Exit(0);
+    }
+    else
+    {
+        printf("...Found\n\r");
+    }
+
+    FT_OPL4_Init();
+
+    printf("Total OPL4 sample memory found: %iK\n\r", FT_OPL4_DetectRam() * 64);
 
     InitRamMapperInfo(4);
     FT_AllocateSegments();
+
+    playerFileHandle = -1;
 
     if(argc == 0)
     {
         printf("\n\rUsage: RoboPlay [<player>.PLY] <song>.EXT\n\r");
         printf("Player name is optional. When no player is provided,\n\rthe songs file extension is used for identification\n\r");
         printf("\n\rUse environment item \"ROBOPLAY\" for players path\n\r");
-        printf("E.g. ROBOPLAY = A:\\ROBOPLAY\\");
+        printf("E.g. SET ROBOPLAY = A:\\ROBOPLAY\\");
         Exit(0);
     }
     
@@ -406,6 +405,10 @@ void main(char *argv[], uint16_t argc)
         printf("Not a valid file for this player\n\r");
         Exit(__INTER);
     }
+    else
+    {
+        printf(" ...Done\n\r");
+    }
 
     printf("\n\r");
     printf("Title       : %s\n\r", iRoboPlay->RP_GetTitle());
@@ -422,12 +425,14 @@ void main(char *argv[], uint16_t argc)
         printf("\nNow playing ...ESC to stop\n\r");
     }
 
+#ifndef __DEBUG
     DisableInterupt();
-
-    FT_ResetOPL();
+#endif
 
     iRoboPlay->RP_Rewind(0);
+ #ifndef __DEBUG
     FT_SetRefresh();
+#endif
 
     subsong = 0;
     while(!FT_EscPressed())
@@ -452,11 +457,16 @@ void main(char *argv[], uint16_t argc)
             }
         }
 
-        while(!InPort(OPL4_REG) & 0x3);
-        FT_WriteOpl1(4, 0x80);
+#ifndef __DEBUG
+        while(!(FT_OPL4_Read() & 0x80));
+        FT_OPL4_FM1_Write(4, 0x80);
+#endif
+#ifdef __DEBUG
+        while(!FT_RightPressed());
+#endif
     }   
 
-    FT_ResetOPL();
+    FT_OPL4_Init();
  
     FT_SetSegment(0);
     EnableInterupt();
