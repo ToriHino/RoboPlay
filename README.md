@@ -79,6 +79,19 @@ Next to this the interface also provides a number of methods towards the RoboPla
 >* *RP_WriteOpl2(uint8_t addr, uint8_t value)*
 >Write value *value* to register *addr* using the second OPL port (*0xC6*)
 
+>* *RP_WriteWave)(uint8_t addr, uint8_t value)*
+>Write value *value* to register *addr* using the wave OPL port (*0x7E*)
+>* *RP_StartWaveDataWrite)()*
+>Indicate the start of a burst data write towards register 6 on the wave OPL port (*0x7E*)
+>* *RP_WriteWaveData)(uint8_t value)*
+>Write data to register 6 on the wave OPL port (*0x7E*)
+
+>* *RP_ReadOpl)()*
+>Read *value* of the OPL status register
+>* *RP_ReadWave)(uint8_t addr)*
+>Read *value* from register *addr* using the wave OPL port (*0x7E*)
+
+
 ## Makefile
 When a new player is added, place it in the *players* subfolder and add the name of the player to the line starting with *all*:
 > all: $(TARGETNAME).com dro.ply sop.ply d00.ply raw.ply clean
