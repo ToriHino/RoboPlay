@@ -49,8 +49,7 @@ typedef struct
     void (*RP_WriteOpl1)(uint8_t addr, uint8_t value);
     void (*RP_WriteOpl2)(uint8_t addr, uint8_t value);
     void (*RP_WriteWave)(uint8_t addr, uint8_t value);
-    void (*RP_StartWaveDataWrite)();
-    void (*RP_WriteWaveData)(uint8_t value);
+    void (*RP_WriteWaveData)(uint8_t* data, uint16_t count);
 
     uint8_t (*RP_ReadOpl)();
     uint8_t (*RP_ReadWave)(uint8_t addr);

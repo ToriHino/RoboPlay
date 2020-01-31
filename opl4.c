@@ -45,15 +45,18 @@ void FT_OPL4_WAVE_Write(uint8_t reg, uint8_t data)
     opl4_wave_data = data;
 }
 
-void FT_OPL4_WAVE_StartDataWrite()
+void FT_OPL4_WAVE_Write_Data(uint8_t *data, uint16_t size)
 {
+    uint16_t i;
+
     OPL4_WAIT;
     opl4_wave_reg = 6;
-}
+    OPL4_WAIT;
 
-void FT_OPL4_WAVE_Data(uint8_t data)
-{
-    opl4_wave_data = data;
+    for(i = 0; i < size; i++)
+    {
+        opl4_wave_data = data[i];
+    }
 }
 
 uint8_t FT_OPL4_Read()

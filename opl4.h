@@ -27,8 +27,7 @@ void FT_OPL4_FM1_Write(uint8_t reg, uint8_t data);
 void FT_OPL4_FM2_Write(uint8_t reg, uint8_t data);
 void FT_OPL4_WAVE_Write(uint8_t reg, uint8_t data);
 
-void FT_OPL4_WAVE_StartDataWrite();
-void FT_OPL4_WAVE_Data(uint8_t data);
+void FT_OPL4_WAVE_Write_Data(uint8_t *data, uint16_t size);
 
 uint8_t FT_OPL4_Read();
 uint8_t FT_OPL4_WAVE_Read(uint8_t reg);

@@ -224,7 +224,6 @@ void FT_ReadPatterns(uint8_t nrOfPatterns)
 void FT_ReadSamples()
 {
     uint8_t  i;
-    uint16_t j;
     uint16_t bytesLeft, bytesRead, readSize;
 
     uint32_t waveAddress = OPL_WAVE_MEMORY + 384 * 12;
@@ -284,19 +283,13 @@ void FT_ReadSamples()
         iRoboPlay->RP_WriteWave(4, (waveAddress >> 8)  & 0xFF);
         iRoboPlay->RP_WriteWave(5, waveAddress & 0xFF);
 
-        iRoboPlay->RP_StartWaveDataWrite();
-
         bytesLeft = modHeader.sampleInfo[i].sampleLength;
         while(bytesLeft)
         {
             readSize = (bytesLeft > READ_BUFFER_SIZE) ? READ_BUFFER_SIZE : bytesLeft;
             bytesRead = iRoboPlay->RP_Read((void*)READ_BUFFER, readSize);
 
-            // Move sample to OPL4 memory
-            for(j = 0; j < bytesRead; j++)
-            {
-                iRoboPlay->RP_WriteWaveData(((uint8_t*)READ_BUFFER)[j]);
-            }
+            iRoboPlay->RP_WriteWaveData((uint8_t*)READ_BUFFER, bytesRead);
 
             waveAddress += bytesRead;
             bytesLeft -= bytesRead;

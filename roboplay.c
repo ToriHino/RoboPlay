@@ -276,8 +276,7 @@ void FT_LoadPlayer(char* fileName)
     iRoboPlay->RP_ReadOpl = &FT_OPL4_Read;
     iRoboPlay->RP_ReadWave = &FT_OPL4_WAVE_Read;
 
-    iRoboPlay->RP_StartWaveDataWrite = &FT_OPL4_WAVE_StartDataWrite;
-    iRoboPlay->RP_WriteWaveData = &FT_OPL4_WAVE_Data;
+    iRoboPlay->RP_WriteWaveData = &FT_OPL4_WAVE_Write_Data;
 
 #ifdef __DEBUG
     iRoboPlay->RP_DebugString = &FT_DebugString;
