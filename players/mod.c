@@ -524,18 +524,19 @@ void FT_HandleOffNoteCommand(uint8_t channel)
                 case 0x06:
                     if(speedStep == 1)
                     {
-                        if(!channelInfo[channel].tempCommand)
+                        if(!stepData[channel].effectData)
                         {
                             channelInfo[channel].patternLoopStart = patternStep - 1;
-                            channelInfo[channel].patternLoopCount = 0;
                         }
                         else
                         {
-                            if(channelInfo[channel].patternLoopCount < channelInfo[channel].tempCommand)
+                            if(channelInfo[channel].patternLoopCount < stepData[channel].effectData)
                             {
                                 channelInfo[channel].patternLoopCount++;
                                 patternStep = channelInfo[channel].patternLoopStart;
                             }
+                            else
+                                channelInfo[channel].patternLoopCount = 0;
                         }
                     }
                     break;
